@@ -29,6 +29,7 @@ type FloaterPos = { top: number; left: number; spinning: boolean };
 
 
 
+type FlyState = { src: string; x: number; y: number; dx: number; dy: number };
 type Tilt = { rx: number; ry: number; scale: number };
 
 export default function HeroSection() {
@@ -46,7 +47,7 @@ export default function HeroSection() {
   const screenRef  = useRef<HTMLImageElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
-  const [screenSrc,  setScreenSrc]  = useState("/center-screen.webp");
+  const [screenSrc,  setScreenSrc]  = useState("/first-screen.webp");
   const [screenAnim, setScreenAnim] = useState(false);
   const [showFlash,  setShowFlash]  = useState(false);
   const [flyState,   setFlyState]   = useState<FlyState | null>(null);
@@ -142,8 +143,18 @@ export default function HeroSection() {
         className={styles.ccBg}
       />
 
+      <div className={styles.screenLabel}>
+        <span className={styles.hintText}>
+          {"your idea".split("").map((char, ci) => (
+            <span key={ci} className={styles.hintChar} style={{ animationDelay: `${ci * 0.06}s` }}>
+              {char === " " ? "\u00A0" : char}
+            </span>
+          ))}
+        </span>
+        <img src="/arrow.webp" alt="" className={styles.screenLabelArrow} />
+      </div>
+
       <img
-        ref={screenRef}
         src={screenSrc}
         alt="Screen"
         className={`${styles.screenCenter}${screenAnim ? " " + styles.screenChanged : ""}`}
