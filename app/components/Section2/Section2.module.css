@@ -1,0 +1,18 @@
+.section {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0f2a3f 0%, #1a3a52 100%);
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.title {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 3rem;
+}
