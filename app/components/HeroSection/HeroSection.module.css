@@ -144,7 +144,8 @@
 .imgCoding  { top: 97%; left: 27%; max-width: 3.2%; transform: translate(-50%, -50%); }
 .imgColors  { top: 50%; left: 27%; max-width: 4%; transform: translate(-50%, -50%); }
 .imgCursor  { top: 66%; left: 40%; max-width: 2%; transform: translate(-50%, -50%); }
-.imgTexts   { top: 43%; left: 69%; max-width: 4.2%; transform: translate(-50%, -50%); }
+.imgTexts   { top: 30%; left: 75%; max-width: 8%; transform: translate(-50%, -50%); }
+.imgTexts .arrowImg { width: 2.5vw; transform: scaleX(-1); }
 .imgMain    { top: 36%; left: 25%; max-width: 6.5%; transform: translate(-50%, -50%); }
 .imgCard    { top: 75%; left: 35%; max-width: 4.5%;  transform: translate(-50%, -50%); }
 .imgLayout {
@@ -428,8 +429,8 @@
 
 .personWrapper {
   position: absolute;
-  left: 62%;
-  bottom: 8%;
+  left: 60%;
+  bottom: 10%;
   transform: translateX(-50%);
   z-index: 22;
   display: flex;

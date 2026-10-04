@@ -8,7 +8,7 @@ import styles from "./HeroSection.module.css";
 // ترتيب التفاعل بالتسلسل
 const STEPS = [
   { id: "layout", src: "/yy.webp",   nextScreen: "/center-screen-layout.webp",                    label: "Layout",     arrowDir: "right" },
-  { id: "texts",  src: "/text.webp",  nextScreen: "/center-screen-layout-text.webp",               label: "Your Text",  arrowDir: "left"  },
+  { id: "texts",  src: "/text.webp",  nextScreen: "/center-screen-layout-text.webp",               label: "Your Text",  arrowDir: "right"  },
   { id: "img",    src: "/img.webp",   nextScreen: "/center-screen-layout-text-img2.webp",           label: "Your Image", arrowDir: "right" },
   { id: "card",   src: "/card.webp",  nextScreen: "/center-screen-layout-text-img-card2.webp",     label: "Card",       arrowDir: "right" },
   { id: "logo",   src: "/logo.webp",  nextScreen: "/center-screen-layout-text-img-card-logo1.webp", label: "Your Logo",  arrowDir: "left"  },
@@ -219,7 +219,7 @@ export default function HeroSection() {
         const isActive = i === step;
         return (
           <div key={id} className={`${styles.stepWrapper} ${stepCls[id]}`}>
-            <div className={`${styles.hint} ${id === "layout" ? styles.hintReverseRight : arrowDir === "left" ? styles.hintLeft : styles.hintRight} ${isActive ? styles.hintActive : styles.hintIdle}`}>
+            <div className={`${styles.hint} ${id === "layout" || id === "texts" ? styles.hintReverseRight : arrowDir === "left" ? styles.hintLeft : styles.hintRight} ${isActive ? styles.hintActive : styles.hintIdle}`}>
               <span className={styles.hintText}>
                 {label.split("").map((char, ci) => (
                   <span key={ci} className={styles.hintChar} style={{ animationDelay: `${ci * 0.06}s` }}>
@@ -228,7 +228,7 @@ export default function HeroSection() {
                 ))}
               </span>
               <span className={styles.hintArrow}>
-                <img src={id === "layout" ? "/arrow-left.webp" : "/arrow2.webp"} alt="" className={`${styles.arrowImg} ${arrowDir === "left" ? styles.arrowLeft : ""} ${isActive ? styles.arrowActive : ""}`} />
+                <img src={id === "layout" || id === "texts" ? "/arrow-left.webp" : "/arrow2.webp"} alt="" className={`${styles.arrowImg} ${arrowDir === "left" ? styles.arrowLeft : ""} ${isActive ? styles.arrowActive : ""}`} />
               </span>
             </div>
             <img

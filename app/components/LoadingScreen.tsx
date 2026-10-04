@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./LoadingScreen.module.css";
 
-/* ───────────── Logo parts (غيّر قيم d لو جبت مسارات أدق) ───────────── */
+/* ───────────── Data ───────────── */
 const PARTS = [
   {
     name: "top",
@@ -38,84 +38,65 @@ const PARTS = [
   },
 ];
 
-function Logo() {
+const PARTICLES = [
+  { x: "12%", y: "20%", size: "6px", color: "#6ee7b7", dur: 3.2, delay: 0 },
+  { x: "80%", y: "15%", size: "4px", color: "#93c5fd", dur: 4.1, delay: 0.5 },
+  { x: "55%", y: "70%", size: "5px", color: "#6ee7b7", dur: 3.7, delay: 1 },
+  { x: "30%", y: "60%", size: "3px", color: "#fff", dur: 5.0, delay: 0.3 },
+  { x: "70%", y: "50%", size: "4px", color: "#93c5fd", dur: 4.5, delay: 1.2 },
+  { x: "90%", y: "75%", size: "6px", color: "#6ee7b7", dur: 3.0, delay: 0.8 },
+  { x: "20%", y: "80%", size: "3px", color: "#fff", dur: 4.8, delay: 0.2 },
+  { x: "45%", y: "30%", size: "5px", color: "#93c5fd", dur: 3.5, delay: 1.5 },
+];
+
+
+
+/* ───────────── Constants ───────────── */
+const VB = { w: 1500, cx: 950, cy: 955 }; // إحداثيات اللوجو الأصلية
+const ANCHOR = { x: 950, y: 520 }; // نقطة الزوم (جوه جسم اللوجو)
+
+const DRAW_DURATION = 3800;
+const FILL_HOLD = 1000;
+const ZOOM_DURATION = 1700;
+
+type Phase = "draw" | "fill" | "zoom";
+
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+/* ───────────── Sub components ───────────── */
+
+/* الطبقة الغامقة: اللوجو فيها فتحة بيظهر منها الموقع */
+function Backdrop({ holeRef }: { holeRef: React.RefObject<SVGGElement | null> }) {
   return (
-    <svg
-      className={styles.logoSvg}
-      viewBox="200 360 1500 1190"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-    >
+    <svg className={`${styles.layer} ${styles.backdrop}`} xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#6ee7b7" />
-          <stop offset="100%" stopColor="#93c5fd" />
-        </linearGradient>
+        <mask id="logoHole" maskUnits="userSpaceOnUse" x="-50%" y="-50%" width="200%" height="200%">
+          <rect x="-50%" y="-50%" width="200%" height="200%" fill="#fff" />
+          <g ref={holeRef} style={{ visibility: "hidden" }}>
+            {PARTS.map((p) => (
+              <path key={p.name} d={p.d} fill="#000" className={styles.holeFill} />
+            ))}
+          </g>
+        </mask>
       </defs>
-
-      {/* مسار شبحي خافت خلف الرسم */}
-      {PARTS.map((p) => (
-        <path key={`g-${p.name}`} d={p.d} className={styles.ghost} />
-      ))}
-
-      {/* الرسم الفعلي */}
-      {PARTS.map((p, i) => (
-        <path
-          key={p.name}
-          d={p.d}
-          pathLength={1}
-          className={styles.draw}
-          style={{ ["--i" as string]: i }}
-          data-part={p.name}
-        />
-      ))}
+      <defs>
+          <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stopColor="#0f1923" />
+            <stop offset="100%" stopColor="#060a0f" />
+          </radialGradient>
+        </defs>
+      <rect x="-50%" y="-50%" width="200%" height="200%" fill="url(#bgGrad)" mask="url(#logoHole)" />
     </svg>
   );
 }
 
-export default function LoadingScreen() {
-  const [progress, setProgress] = useState(0);
-  const [hidden, setHidden] = useState(false);
-  const [leaving, setLeaving] = useState(false);
-
-  useEffect(() => {
-    const start = Date.now();
-    const duration = 3600; // يتزامن مع أنيميشن الرسم
-    let frame = 0;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    const raf = () => {
-      const p = Math.min((Date.now() - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setProgress(Math.round(eased * 100));
-
-      if (p < 1) {
-        frame = requestAnimationFrame(raf);
-      } else {
-        // بعد النبض: ابدأ الدخول داخل اللوجو
-        timers.push(
-          setTimeout(() => {
-            setLeaving(true);
-            timers.push(setTimeout(() => setHidden(true), 1500));
-          }, 700)
-        );
-      }
-    };
-
-    frame = requestAnimationFrame(raf);
-    return () => {
-      cancelAnimationFrame(frame);
-      timers.forEach(clearTimeout);
-    };
-  }, []);
-
-  if (hidden) return null;
-
-  const done = progress === 100;
-
+/* الديكور: بدون أي stroke نهائيًا */
+function Decor() {
   return (
-    <div className={`${styles.wrapper} ${leaving ? styles.leaving : ""}`}>
-      {/* floating particles */}
+    <div className={styles.decor}>
+      <div className={styles.grid} />
+
       {PARTICLES.map((p, i) => (
         <span
           key={i}
@@ -132,22 +113,6 @@ export default function LoadingScreen() {
         />
       ))}
 
-      {/* tree silhouettes */}
-      <svg className={styles.trees} viewBox="0 0 1440 220" preserveAspectRatio="none">
-        {TREES.map((t, i) => (
-          <polygon
-            key={i}
-            points={t.points}
-            fill={t.fill}
-            style={{
-              animation: `treeSway ${t.dur}s ease-in-out ${t.delay}s infinite alternate`,
-              transformOrigin: `${t.ox}px 220px`,
-            }}
-          />
-        ))}
-      </svg>
-
-      {/* clouds */}
       <svg className={styles.cloud1} width="260" height="80" viewBox="0 0 260 80">
         <ellipse cx="130" cy="55" rx="120" ry="28" fill="#fff" />
         <ellipse cx="90" cy="42" rx="60" ry="32" fill="#fff" />
@@ -158,46 +123,178 @@ export default function LoadingScreen() {
         <ellipse cx="65" cy="30" rx="42" ry="24" fill="#fff" />
         <ellipse cx="120" cy="28" rx="38" ry="22" fill="#fff" />
       </svg>
-
-      {/* brand */}
-      <div className={styles.brand}>
-        <div className={styles.halo} />
-        <div className={`${styles.logoWrap} ${done ? styles.done : ""}`}>
-          <Logo />
-        </div>
-        <p className={styles.tagline}>your idea, built.</p>
-      </div>
-
-      {/* progress bar */}
-      <div className={styles.progressWrapper}>
-        <div className={styles.progressTrack}>
-          <div className={styles.progressFill} style={{ width: `${progress}%` }} />
-        </div>
-        <span className={styles.progressText}>{progress}%</span>
-      </div>
     </div>
   );
 }
 
-const PARTICLES = [
-  { x: "12%", y: "20%", size: "6px", color: "#6ee7b7", dur: 3.2, delay: 0 },
-  { x: "80%", y: "15%", size: "4px", color: "#93c5fd", dur: 4.1, delay: 0.5 },
-  { x: "55%", y: "70%", size: "5px", color: "#6ee7b7", dur: 3.7, delay: 1 },
-  { x: "30%", y: "60%", size: "3px", color: "#fff", dur: 5.0, delay: 0.3 },
-  { x: "70%", y: "50%", size: "4px", color: "#93c5fd", dur: 4.5, delay: 1.2 },
-  { x: "90%", y: "75%", size: "6px", color: "#6ee7b7", dur: 3.0, delay: 0.8 },
-  { x: "20%", y: "80%", size: "3px", color: "#fff", dur: 4.8, delay: 0.2 },
-  { x: "45%", y: "30%", size: "5px", color: "#93c5fd", dur: 3.5, delay: 1.5 },
-];
+/* بوردر اللوجو: الوحيد اللي عليه stroke */
+function LogoOutline({ groupRef }: { groupRef: React.RefObject<SVGGElement | null> }) {
+  return (
+    <svg className={`${styles.layer} ${styles.strokes}`} xmlns="http://www.w3.org/2000/svg" fill="none">
+      <defs>
+        <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#6ee7b7" />
+          <stop offset="100%" stopColor="#93c5fd" />
+        </linearGradient>
+      </defs>
+      <g ref={groupRef} style={{ visibility: "hidden" }}>
+        {PARTS.map((p) => (
+          <path key={`ghost-${p.name}`} d={p.d} className={styles.ghost} />
+        ))}
+        {PARTS.map((p, i) => (
+          <path
+            key={p.name}
+            d={p.d}
+            pathLength={1}
+            className={styles.draw}
+            style={{ ["--i" as string]: i }}
+          />
+        ))}
+      </g>
+    </svg>
+  );
+}
 
-const TREES = [
-  { points: "200,220 240,120 280,220", fill: "#1a2a1a", dur: 3.5, delay: 0, ox: 240 },
-  { points: "320,220 370,80  420,220", fill: "#162216", dur: 4.2, delay: 0.4, ox: 370 },
-  { points: "500,220 535,110 570,220", fill: "#1a2a1a", dur: 3.8, delay: 0.8, ox: 535 },
-  { points: "680,220 730,60  780,220", fill: "#162216", dur: 4.5, delay: 0.2, ox: 730 },
-  { points: "860,220 900,95  940,220", fill: "#1a2a1a", dur: 3.3, delay: 1.0, ox: 900 },
-  { points: "1020,220 1060,75 1100,220", fill: "#162216", dur: 4.0, delay: 0.6, ox: 1060 },
-  { points: "1180,220 1215,105 1250,220", fill: "#1a2a1a", dur: 3.6, delay: 0.3, ox: 1215 },
-  { points: "100,220  130,140 160,220", fill: "#1a2a1a", dur: 4.3, delay: 0.7, ox: 130 },
-  { points: "1300,220 1340,90 1380,220", fill: "#162216", dur: 3.9, delay: 1.1, ox: 1340 },
-];
+/* ───────────── Main ───────────── */
+export default function LoadingScreen() {
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<Phase>("draw");
+  const [ready, setReady] = useState(false); // اللوجو اتقاس واتحط في مكانه
+  const [hidden, setHidden] = useState(false);
+
+  const phaseRef = useRef<Phase>("draw");
+  const slotRef = useRef<HTMLDivElement>(null);
+  const holeG = useRef<SVGGElement>(null);
+  const strokeG = useRef<SVGGElement>(null);
+  const geo = useRef({ base: 0.13, ax: 0, ay: 0, w: 0, h: 0 });
+  const holeGStyle = useRef<string>("");
+  const strokeGStyle = useRef<string>("");
+
+  phaseRef.current = phase;
+
+  const setTransform = (s: number, px: number, py: number) => {
+    const t = `translate(${px} ${py}) scale(${s}) translate(${-ANCHOR.x} ${-ANCHOR.y})`;
+    if (holeG.current) { holeG.current.setAttribute("transform", t); holeG.current.style.visibility = "visible"; }
+    if (strokeG.current) { strokeG.current.setAttribute("transform", t); strokeG.current.style.visibility = "visible"; }
+  };
+
+  const measure = () => {
+    const el = slotRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const base = r.width / VB.w;
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    geo.current = {
+      base,
+      ax: cx + (ANCHOR.x - VB.cx) * base,
+      ay: cy + (ANCHOR.y - VB.cy) * base,
+      w: window.innerWidth,
+      h: window.innerHeight,
+    };
+    setTransform(base, geo.current.ax, geo.current.ay);
+  };
+
+  /* قفل السكرول + القياس (اللوجو مخفي لحد ما يخلص) */
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    measure();
+    setReady(true); // دلوقتي بس نظهر اللوجو ونبدأ الأنيميشن
+
+    const onResize = () => {
+      if (phaseRef.current !== "zoom") measure();
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("resize", onResize);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* التقدم + الانتقال بين المراحل (بعد ready) */
+  useEffect(() => {
+    if (!ready) return;
+
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      const t = setTimeout(() => setHidden(true), 600);
+      return () => clearTimeout(t);
+    }
+
+    const start = performance.now();
+    let frame = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / DRAW_DURATION, 1);
+      setProgress(Math.round((1 - Math.pow(1 - p, 3)) * 100));
+
+      if (p < 1) {
+        frame = requestAnimationFrame(tick);
+      } else {
+        setPhase("fill");
+        timer = setTimeout(() => setPhase("zoom"), FILL_HOLD);
+      }
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(frame);
+      if (timer) clearTimeout(timer);
+    };
+  }, [ready]);
+
+  /* الزوم: تحريك الـ transform مباشرة بدون re-render */
+  useEffect(() => {
+    if (phase !== "zoom") return;
+    const { base, ax, ay, w, h } = geo.current;
+
+    const K = (1.1 * (h + 0.5 * w)) / (300 * base);
+    const cx = w / 2;
+    const cy = h / 2;
+    const t0 = performance.now();
+    let frame = 0;
+
+    const step = (now: number) => {
+      const t = Math.min((now - t0) / ZOOM_DURATION, 1);
+      const e = easeInOutCubic(t);
+      const s = base * Math.exp(Math.log(K) * e);
+      setTransform(s, ax + (cx - ax) * e, ay + (cy - ay) * e);
+
+      if (t < 1) frame = requestAnimationFrame(step);
+      else setHidden(true);
+    };
+
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  if (hidden) return null;
+
+  return (
+    <div
+      className={`${styles.wrapper} ${styles[phase]} ${ready ? styles.ready : ""}`}
+    >
+      <Backdrop holeRef={holeG} />
+      <Decor />
+      <LogoOutline groupRef={strokeG} />
+
+      <div className={styles.ui}>
+        <div ref={slotRef} className={styles.logoSlot} />
+        <p className={styles.tagline}>your idea, built.</p>
+
+        <div className={styles.progressWrapper}>
+          <div className={styles.progressTrack}>
+            <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+          </div>
+          <span className={styles.progressText}>{progress}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
