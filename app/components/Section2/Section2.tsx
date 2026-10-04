@@ -2,138 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import NextImage from "next/image";
 import styles from "./nextSection.module.css";
 
-gsap.registerPlugin(ScrollTrigger);
-
-const FRAMES_FOLDER = "/hero2-webp";
-const DEFAULT_TOTAL_FRAMES = 300;
-const BLINK_FRAME = 280;
-
 const CURSOR_IMAGES = ["/code.png", "/dev.webp"];
 
-const getTotalFrames = async (): Promise<number> => {
-  try {
-    const res = await fetch(`${FRAMES_FOLDER}/manifest.json`);
-    if (!res.ok) return DEFAULT_TOTAL_FRAMES;
-    const manifest: { total?: number } = await res.json();
-    return typeof manifest.total === "number" && manifest.total > 0
-      ? manifest.total
-      : DEFAULT_TOTAL_FRAMES;
-  } catch {
-    return DEFAULT_TOTAL_FRAMES;
-  }
-};
-
-const getFrameSrc = (index: number): string => {
-  const frameNumber = (index + 1).toString().padStart(4, "0");
-  return `${FRAMES_FOLDER}/hero2-frame-${frameNumber}.jpg`;
-};
-
 export default function Hero2Section() {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const blinkCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const shadowRef = useRef<HTMLImageElement>(null);
+  const yyRef = useRef<HTMLImageElement>(null);
   const lineRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const nextLineRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [imagesLoaded, setImagesLoaded] = useState(false);
   const [cursorActive, setCursorActive] = useState(false);
   const [cursorVariant, setCursorVariant] = useState(0);
 
-  const frameImages = useRef<HTMLImageElement[]>([]);
-  const frameIndex = useRef(0);
-
-  /* ── تحميل الفريمات ── */
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    let cancelled = false;
-
-    getTotalFrames().then((total) => {
-      if (cancelled) return;
-      const images: HTMLImageElement[] = [];
-      let attempted = 0;
-
-      const maybeReady = () => {
-        if (attempted >= total && !cancelled) {
-          const firstImg = images.find((img) => img.complete);
-          if (firstImg) {
-            canvas.width = firstImg.naturalWidth;
-            canvas.height = firstImg.naturalHeight;
-            context.drawImage(firstImg, 0, 0);
-          }
-          setImagesLoaded(true);
-        }
-      };
-
-      for (let i = 0; i < total; i++) {
-        const img = new Image();
-        img.src = getFrameSrc(i);
-        images.push(img);
-        const onDone = () => { attempted++; maybeReady(); };
-        if (img.complete) { onDone(); } else { img.onload = onDone; img.onerror = onDone; }
-      }
-      frameImages.current = images;
-    });
-
-    return () => { cancelled = true; };
-  }, []);
-
-  /* ── ScrollTrigger + canvas render ── */
-  useEffect(() => {
-    const section = sectionRef.current;
-    const canvas = canvasRef.current;
-    const blinkCanvas = blinkCanvasRef.current;
-    if (!section || !canvas || !blinkCanvas || !imagesLoaded) return;
-
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    let lastDrawn: HTMLImageElement | null = null;
-
-    const render = () => {
-      const img = frameImages.current[frameIndex.current];
-      const source = img && img.complete ? img : lastDrawn;
-      if (source) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(source, 0, 0);
-        lastDrawn = source;
-      }
-    };
-
-    const frameTrigger = ScrollTrigger.create({
-      trigger: section,
-      start: "top top",
-      end: "+=300%",
-      scrub: 0.5,
-      pin: true,
-      anticipatePin: 1,
-      onUpdate: (self) => {
-        const totalFrames = frameImages.current.length;
-        const newFrame = Math.min(totalFrames - 1, Math.floor(self.progress * totalFrames));
-        if (newFrame !== frameIndex.current) { frameIndex.current = newFrame; render(); }
-
-        if (newFrame >= BLINK_FRAME) {
-          const bp = Math.min(1, (newFrame - BLINK_FRAME) / 1);
-          gsap.to(blinkCanvas, { opacity: bp < 0.5 ? bp * 2 : (1 - bp) * 2, duration: 0.1, ease: "power2.inOut" });
-        } else {
-          gsap.to(blinkCanvas, { opacity: 0, duration: 0.1 });
-        }
-      },
-    });
-
-    render();
-    return () => { frameTrigger.kill(); };
-  }, [imagesLoaded]);
-
-  /* ── إعداد السطور: الأولى ظاهرة، الثانية مخفية تحت ── */
+  /* ── إعداد السطور ── */
   useEffect(() => {
     const lines = lineRefs.current.filter(Boolean) as HTMLSpanElement[];
     const nextLines = nextLineRefs.current.filter(Boolean) as HTMLSpanElement[];
@@ -177,33 +62,36 @@ export default function Hero2Section() {
   const toggleLines = () => {
     const lines = lineRefs.current.filter(Boolean) as HTMLSpanElement[];
     const nextLines = nextLineRefs.current.filter(Boolean) as HTMLSpanElement[];
-    if (!lines.length) return;
+    const img = imgRef.current;
+    const shadow = shadowRef.current;
+    const yy = yyRef.current;
+    if (!lines.length || !img || !shadow) return;
 
-    setCursorVariant((v) => (v + 1) % CURSOR_IMAGES.length);
-
+    new Audio("/click3.wav").play().catch(() => {});
     const isFirst = Number(gsap.getProperty(lines[0], "yPercent")) === 0;
     const outgoing = isFirst ? lines : nextLines;
     const incoming = isFirst ? nextLines : lines;
-
-    gsap.set(incoming, { yPercent: 100, xPercent: 0 });
-
     const outDir = (i: number) => (i % 2 === 0 ? 8 : -8);
 
     gsap.timeline()
-      .to(outgoing, {
-        yPercent: 100,
-        xPercent: (i) => outDir(i),
-        duration: 1.1,
-        ease: "expo.inOut",
-        stagger: 0.08,
-        overwrite: true,
-      }, 0)
-      .fromTo(
-        incoming,
-        { yPercent: 100, xPercent: (i) => -outDir(i) },
-        { yPercent: 0, xPercent: 0, duration: 1.1, ease: "expo.inOut", stagger: 0.08, overwrite: true },
-        0.15
-      );
+      .to(shadow, { opacity: 0, filter: "brightness(0) opacity(0) blur(0px)", x: -4, y: -5, duration: 0.22, ease: "power2.out" }, 0)
+      .to([img, yy], { x: 34, y: 44, duration: 0.22, ease: "power2.out" }, 0)
+      .to([img, yy], { scale: 1.15, duration: 0.12, ease: "power2.in" })
+      .to([img, yy], { scale: 1.15, duration: 0.35 })
+      .to([img, yy], { scale: 0, duration: 0.18, ease: "power2.in" })
+      .call(() => setCursorVariant((v) => (v + 1) % CURSOR_IMAGES.length))
+      .set([img, yy], { scale: 0 })
+      .to([img, yy], { scale: 1.15, duration: 0.22, ease: "power2.out" })
+      .to([img, yy], { scale: 1.15, duration: 0.4 })
+      .to([img, yy], { scale: 0.85, duration: 0.08, ease: "power2.in" })
+      .to([img, yy], { scale: 1, x: 0, y: 0, duration: 0.6, ease: "power3.out" })
+      .to(shadow, { x: 0, y: 0, opacity: 1, filter: "brightness(0) opacity(0.3) blur(0.8px)", duration: 0.3 }, "-=0.3")
+      .call(() => {
+        gsap.set(incoming, { yPercent: 100, xPercent: 0 });
+        gsap.timeline()
+          .to(outgoing, { yPercent: 100, xPercent: (i) => outDir(i), duration: 1.1, ease: "expo.inOut", stagger: 0.08, overwrite: true }, 0)
+          .fromTo(incoming, { yPercent: 100, xPercent: (i) => -outDir(i) }, { yPercent: 0, xPercent: 0, duration: 1.1, ease: "expo.inOut", stagger: 0.08, overwrite: true }, 0.15);
+      }, undefined, 0.1);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLHeadingElement>) => {
@@ -212,20 +100,15 @@ export default function Hero2Section() {
 
   return (
     <>
-      <section ref={sectionRef} className={styles.hero} aria-labelledby="hero2-title">
-        <canvas ref={canvasRef} className={styles.backgroundVideo} aria-hidden="true" />
-        <canvas ref={blinkCanvasRef} className={styles.blinkOverlay} width="100" height="100" aria-hidden="true" />
-
+      <section className={styles.hero} aria-labelledby="hero2-title">
         <h2
           id="hero2-title"
-          ref={titleRef}
           className={styles.title}
           style={{ cursor: cursorActive ? "none" : "pointer" }}
           onClick={toggleLines}
           onKeyDown={onKeyDown}
           onMouseEnter={() => { setCursorVariant((v) => (v + 1) % CURSOR_IMAGES.length); setCursorActive(true); }}
           onMouseLeave={() => setCursorActive(false)}
-          onMouseDown={() => { if (releaseTimerRef.current) clearTimeout(releaseTimerRef.current); }}
           role="button"
           tabIndex={0}
           aria-label="LET'S CREATE A REMARKABLE JOURNEY — YOUR GATEWAY TO EXCITEMENT STARTS HERE"
@@ -245,13 +128,14 @@ export default function Hero2Section() {
         </h2>
       </section>
 
-      {/* مؤشر مخصص */}
       <div
         ref={cursorRef}
         aria-hidden="true"
         className={`${styles.customCursor} ${cursorActive ? styles.customCursorActive : ""}`}
       >
-        <NextImage src={CURSOR_IMAGES[cursorVariant]} alt="" width={80} height={cursorVariant === 0 ? 65 : 80} priority />
+        <NextImage ref={shadowRef} className={styles.customCursorShadowImg} src={CURSOR_IMAGES[cursorVariant]} alt="" width={80} height={cursorVariant === 0 ? 65 : 80} aria-hidden="true" />
+        <NextImage ref={yyRef} className={styles.customCursorYY} src="/yy.webp" alt="" width={80} height={80} aria-hidden="true" />
+        <NextImage ref={imgRef} className={styles.customCursorImg} src={CURSOR_IMAGES[cursorVariant]} alt="" width={80} height={cursorVariant === 0 ? 65 : 80} priority />
       </div>
     </>
   );

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Caveat, Bodoni_Moda, Anton } from "next/font/google";
+import { Geist, Geist_Mono, Caveat, Bodoni_Moda, Anton, Orbitron } from "next/font/google";
 import "./globals.css";
 import SmoothScroll from "./components/SmoothScroll";
 import LoadingScreen from "./components/LoadingScreen";
@@ -27,10 +27,10 @@ const bodoniModa = Bodoni_Moda({
   style: ["normal", "italic"],
 });
 
-const anton = Anton({
-  variable: "--font-anton",
+const orbitron = Orbitron({
+  variable: "--font-orbitron",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -42,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} ${bodoniModa.variable} ${anton.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} ${bodoniModa.variable} ${orbitron.variable} h-full antialiased`}
     >
       <body>
         <LoadingScreen />

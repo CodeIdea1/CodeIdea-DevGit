@@ -5,17 +5,14 @@ import { useRef, useState } from "react";
 import Head from "./Head";
 import styles from "./HeroSection.module.css";
 
-// ترتيب التفاعل بالتسلسل
 const STEPS = [
   { id: "layout", src: "/yy.webp",   nextScreen: "/center-screen-layout.webp",                    label: "Layout",     arrowDir: "right" },
-  { id: "texts",  src: "/text.webp",  nextScreen: "/center-screen-layout-text.webp",               label: "Your Text",  arrowDir: "right"  },
-  { id: "img",    src: "/img.webp",   nextScreen: "/center-screen-layout-text-img2.webp",           label: "Your Image", arrowDir: "right" },
-  { id: "card",   src: "/card.webp",  nextScreen: "/center-screen-layout-text-img-card2.webp",     label: "Card",       arrowDir: "right" },
+  { id: "texts",  src: "/text.webp",  nextScreen: "/center-screen-layout-text.webp",                label: "Your Text",  arrowDir: "right"  },
+  { id: "img",    src: "/img.webp",   nextScreen: "/center-screen-layout-text-img2.webp",            label: "Your Image", arrowDir: "right" },
+  { id: "card",   src: "/card.webp",  nextScreen: "/center-screen-layout-text-img-card2.webp",      label: "Card",       arrowDir: "right" },
   { id: "logo",   src: "/logo.webp",  nextScreen: "/center-screen-layout-text-img-card-logo1.webp", label: "Your Logo",  arrowDir: "left"  },
 ];
 
-
-// مواضع دائرية حول الشاشة المركزية (top%, left%)
 const ORBIT_POSITIONS = [
   { top: 85, left: 28 },
   { top: 20, left: 58 },
@@ -26,11 +23,8 @@ const ORBIT_POSITIONS = [
 ];
 
 type FloaterPos = { top: number; left: number; spinning: boolean };
-
-
-
-type FlyState = { src: string; x: number; y: number; dx: number; dy: number };
-type Tilt = { rx: number; ry: number; scale: number };
+type FlyState   = { src: string; x: number; y: number; dx: number; dy: number };
+type Tilt       = { rx: number; ry: number; scale: number };
 
 export default function HeroSection() {
   const [floaterPositions, setFloaterPositions] = useState<FloaterPos[]>([
@@ -47,13 +41,13 @@ export default function HeroSection() {
   const screenRef  = useRef<HTMLImageElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
-  const [screenSrc,  setScreenSrc]  = useState("/first-screen.webp");
-  const [screenAnim, setScreenAnim] = useState(false);
-  const [showFlash,  setShowFlash]  = useState(false);
-  const [flyState,   setFlyState]   = useState<FlyState | null>(null);
-  const [step,       setStep]       = useState(0);          // index في STEPS
-  const [done,       setDone]       = useState<Set<string>>(new Set());
-  const [tilts,      setTilts]      = useState<Record<string, Tilt>>(
+  const [screenSrc,     setScreenSrc]     = useState("/first-screen.webp");
+  const [screenAnim,    setScreenAnim]    = useState(false);
+  const [showFlash,     setShowFlash]     = useState(false);
+  const [flyState,      setFlyState]      = useState<FlyState | null>(null);
+  const [step,          setStep]          = useState(0);
+  const [done,          setDone]          = useState<Set<string>>(new Set());
+  const [tilts,         setTilts]         = useState<Record<string, Tilt>>(
     Object.fromEntries(STEPS.map(s => [s.id, { rx: 0, ry: 0, scale: 1 }]))
   );
 
@@ -73,6 +67,7 @@ export default function HeroSection() {
       transition: "transform 0.15s ease-out, opacity 0.3s ease",
       opacity: t.scale > 1 ? 1 : 0.9,
       visibility: flying ? "hidden" : "visible",
+      ...(id === "layout" ? { filter: "brightness(1.05) saturate(0.85)" } : {}),
     };
   }
 
@@ -91,11 +86,37 @@ export default function HeroSection() {
 
   function fly(id: string, src: string, nextScreen: string) {
     const ref = refs[id];
-    if (!ref.current || !screenRef.current || !sectionRef.current) {
-      console.log("fly blocked:", { ref: ref.current, screen: screenRef.current, section: sectionRef.current });
+    if (!ref.current || !screenRef.current || !sectionRef.current) return;
+
+    if (id === "layout") {
+
+      const section = sectionRef.current.getBoundingClientRect();
+      const el      = ref.current.getBoundingClientRect();
+      const screen  = screenRef.current.getBoundingClientRect();
+
+      setFlyState({
+        src,
+        x:  el.left - section.left + el.width  / 2,
+        y:  el.top  - section.top  + el.height / 2,
+        dx: (screen.left + screen.width  / 2) - (el.left + el.width  / 2),
+        dy: (screen.top  + screen.height / 2) - (el.top  + el.height / 2),
+      });
+
+      setTimeout(() => {
+        setFlyState(null);
+        setShowFlash(true);
+        setDone(prev => new Set(prev).add(id));
+        setStep(prev => prev + 1);
+        spinFloaters();
+        setTimeout(() => {
+          setShowFlash(false);
+          setScreenSrc(nextScreen);
+          setScreenAnim(true);
+          setTimeout(() => setScreenAnim(false), 800);
+        }, 300);
+      }, 900);
       return;
     }
-    console.log("fly started", id);
 
     const section = sectionRef.current.getBoundingClientRect();
     const el      = ref.current.getBoundingClientRect();
@@ -141,11 +162,7 @@ export default function HeroSection() {
         <img src="/cloud-slide.webp" alt="" className={styles.cloudSlide} />
       </div>
 
-      <img
-        src="/cloud3.webp"
-        alt=""
-        className={styles.ccBg}
-      />
+      <img src="/cloud3.webp" alt="" className={styles.ccBg} />
 
       <div className={styles.screenLabel}>
         <span className={styles.hintText}>
@@ -159,6 +176,7 @@ export default function HeroSection() {
       </div>
 
       <img
+        key={screenSrc}
         ref={screenRef}
         src={screenSrc}
         alt="Screen"
@@ -167,7 +185,6 @@ export default function HeroSection() {
 
       {showFlash && <div className={styles.screenFlash} />}
 
-      {/* flying clone */}
       {flyState && (
         <>
           <style>{`
@@ -190,13 +207,13 @@ export default function HeroSection() {
               height: "auto",
               zIndex: 30,
               pointerEvents: "none",
+              filter: flyState.src === "/yy.webp" ? "brightness(1.05) saturate(0.85)" : undefined,
               animation: "__fly 0.9s cubic-bezier(0.4,0,0.2,1) forwards",
             }}
           />
         </>
       )}
 
-      {/* decorative floaters with orbit animation */}
       {(["coding.webp", "cursor.webp"] as const).map((src, i) => (
         <img
           key={src}
@@ -213,12 +230,11 @@ export default function HeroSection() {
         />
       ))}
 
-      {/* interactive steps */}
       {STEPS.map(({ id, src, nextScreen, label, arrowDir }, i) => {
         if (done.has(id)) return null;
         const isActive = i === step;
         return (
-          <div key={id} className={`${styles.stepWrapper} ${stepCls[id]}`}>
+          <div key={id} className={`${styles.stepWrapper} ${id === "layout" ? styles.stepWrapperBehind : ""} ${stepCls[id]}`}>
             <div className={`${styles.hint} ${id === "layout" || id === "texts" ? styles.hintReverseRight : arrowDir === "left" ? styles.hintLeft : styles.hintRight} ${isActive ? styles.hintActive : styles.hintIdle}`}>
               <span className={styles.hintText}>
                 {label.split("").map((char, ci) => (
@@ -240,7 +256,6 @@ export default function HeroSection() {
               onMouseMove={isActive ? e => setTilts(p => ({ ...p, [id]: calcTilt(e) })) : undefined}
               onMouseLeave={isActive ? () => setTilts(p => ({ ...p, [id]: { rx: 0, ry: 0, scale: 1 } })) : undefined}
               onClick={() => {
-                console.log("clicked", id, "isActive:", isActive, "flyState:", flyState, "ref:", refs[id]?.current);
                 if (!isActive || flyState) return;
                 setTilts(p => ({ ...p, [id]: { rx: 0, ry: 0, scale: 1 } }));
                 fly(id, src, nextScreen);

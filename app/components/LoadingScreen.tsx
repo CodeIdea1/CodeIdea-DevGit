@@ -129,6 +129,46 @@ function Decor() {
 
 /* بوردر اللوجو: الوحيد اللي عليه stroke */
 function LogoOutline({ groupRef }: { groupRef: React.RefObject<SVGGElement | null> }) {
+  const pathsRef = useRef<SVGPathElement[]>([]);
+
+  useEffect(() => {
+    const paths = pathsRef.current.filter(Boolean);
+    if (!paths.length) return;
+
+    // نحسب الطول الحقيقي لكل path ونخفيها
+    paths.forEach((p) => {
+      const len = p.getTotalLength();
+      p.style.strokeDasharray = String(len);
+      p.style.strokeDashoffset = String(len);
+    });
+
+    const STAGGER = 0.55;
+    const PART_DUR = 1.3;
+    const ease = (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+    let frame = 0;
+    const start = performance.now() + 300;
+
+    const tick = (now: number) => {
+      paths.forEach((p, i) => {
+        const len = parseFloat(p.style.strokeDasharray);
+        const elapsed = (now - start - i * STAGGER * 1000) / (PART_DUR * 1000);
+        const t = Math.max(0, Math.min(1, elapsed));
+        p.style.strokeDashoffset = String(len * (1 - ease(t)));
+      });
+
+      const done = paths.every((p, i) => {
+        const elapsed = (now - start - i * STAGGER * 1000) / (PART_DUR * 1000);
+        return elapsed >= 1;
+      });
+
+      if (!done) frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <svg className={`${styles.layer} ${styles.strokes}`} xmlns="http://www.w3.org/2000/svg" fill="none">
       <defs>
@@ -144,10 +184,9 @@ function LogoOutline({ groupRef }: { groupRef: React.RefObject<SVGGElement | nul
         {PARTS.map((p, i) => (
           <path
             key={p.name}
+            ref={(el) => { if (el) pathsRef.current[i] = el; }}
             d={p.d}
-            pathLength={1}
             className={styles.draw}
-            style={{ ["--i" as string]: i }}
           />
         ))}
       </g>
