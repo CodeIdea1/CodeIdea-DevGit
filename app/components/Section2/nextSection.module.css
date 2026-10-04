@@ -79,16 +79,6 @@
   filter: brightness(0) opacity(0.3) blur(0.8px);
 }
 
-.customCursorYY {
-  width: 65px;
-  height: auto;
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-}
-
 .customCursorActive {
   opacity: 1;
 }

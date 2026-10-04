@@ -11,7 +11,6 @@ export default function Hero2Section() {
   const cursorRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const shadowRef = useRef<HTMLImageElement>(null);
-  const yyRef = useRef<HTMLImageElement>(null);
   const lineRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const nextLineRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
@@ -64,7 +63,6 @@ export default function Hero2Section() {
     const nextLines = nextLineRefs.current.filter(Boolean) as HTMLSpanElement[];
     const img = imgRef.current;
     const shadow = shadowRef.current;
-    const yy = yyRef.current;
     if (!lines.length || !img || !shadow) return;
 
     new Audio("/click3.wav").play().catch(() => {});
@@ -75,16 +73,16 @@ export default function Hero2Section() {
 
     gsap.timeline()
       .to(shadow, { opacity: 0, filter: "brightness(0) opacity(0) blur(0px)", x: -4, y: -5, duration: 0.22, ease: "power2.out" }, 0)
-      .to([img, yy], { x: 34, y: 44, duration: 0.22, ease: "power2.out" }, 0)
-      .to([img, yy], { scale: 1.15, duration: 0.12, ease: "power2.in" })
-      .to([img, yy], { scale: 1.15, duration: 0.35 })
-      .to([img, yy], { scale: 0, duration: 0.18, ease: "power2.in" })
+      .to(img, { x: 34, y: 44, duration: 0.22, ease: "power2.out" }, 0)
+      .to(img, { scale: 1.15, duration: 0.12, ease: "power2.in" })
+      .to(img, { scale: 1.15, duration: 0.35 })
+      .to(img, { scale: 0, duration: 0.18, ease: "power2.in" })
       .call(() => setCursorVariant((v) => (v + 1) % CURSOR_IMAGES.length))
-      .set([img, yy], { scale: 0 })
-      .to([img, yy], { scale: 1.15, duration: 0.22, ease: "power2.out" })
-      .to([img, yy], { scale: 1.15, duration: 0.4 })
-      .to([img, yy], { scale: 0.85, duration: 0.08, ease: "power2.in" })
-      .to([img, yy], { scale: 1, x: 0, y: 0, duration: 0.6, ease: "power3.out" })
+      .set(img, { scale: 0 })
+      .to(img, { scale: 1.15, duration: 0.22, ease: "power2.out" })
+      .to(img, { scale: 1.15, duration: 0.4 })
+      .to(img, { scale: 0.85, duration: 0.08, ease: "power2.in" })
+      .to(img, { scale: 1, x: 0, y: 0, duration: 0.6, ease: "power3.out" })
       .to(shadow, { x: 0, y: 0, opacity: 1, filter: "brightness(0) opacity(0.3) blur(0.8px)", duration: 0.3 }, "-=0.3")
       .call(() => {
         gsap.set(incoming, { yPercent: 100, xPercent: 0 });
@@ -134,7 +132,6 @@ export default function Hero2Section() {
         className={`${styles.customCursor} ${cursorActive ? styles.customCursorActive : ""}`}
       >
         <NextImage ref={shadowRef} className={styles.customCursorShadowImg} src={CURSOR_IMAGES[cursorVariant]} alt="" width={80} height={cursorVariant === 0 ? 65 : 80} aria-hidden="true" />
-        <NextImage ref={yyRef} className={styles.customCursorYY} src="/yy.webp" alt="" width={80} height={80} aria-hidden="true" />
         <NextImage ref={imgRef} className={styles.customCursorImg} src={CURSOR_IMAGES[cursorVariant]} alt="" width={80} height={cursorVariant === 0 ? 65 : 80} priority />
       </div>
     </>
