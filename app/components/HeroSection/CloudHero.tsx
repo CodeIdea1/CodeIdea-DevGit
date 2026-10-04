@@ -91,7 +91,7 @@ export default function CloudHero() {
 
     const img = new window.Image();
     img.crossOrigin = "anonymous";
-    img.src = "/hero3.webp";
+    img.src = "/back1.webp";
     img.onload = () => {
       canvas.width  = img.naturalWidth;
       canvas.height = img.naturalHeight;

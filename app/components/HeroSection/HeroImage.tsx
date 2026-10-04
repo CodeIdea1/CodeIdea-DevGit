@@ -78,7 +78,7 @@ export default function HeroImage() {
 
     const img = new window.Image();
     img.crossOrigin = "anonymous";
-    img.src = "/hero3.webp";
+    img.src = "/back1.webp";
     img.onload = () => {
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);

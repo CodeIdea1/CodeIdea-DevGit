@@ -1,0 +1,237 @@
+.wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0d1117;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  overflow: hidden;
+}
+
+/* ── الخروج: الخلفية تتلاشى أثناء الدخول داخل اللوجو ── */
+.leaving {
+  pointer-events: none;
+  animation: wrapperFade 0.7s ease 0.7s forwards;
+}
+
+/* ── Particles ── */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.18;
+  filter: blur(1px);
+  animation: floatUp 3s ease-in-out infinite alternate;
+}
+
+/* ── Trees SVG ── */
+.trees {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* ── Clouds ── */
+.cloud1 {
+  position: absolute;
+  top: 12%;
+  left: 5%;
+  opacity: 0.07;
+  animation: cloudDrift 4s ease-in-out infinite alternate;
+}
+
+.cloud2 {
+  position: absolute;
+  top: 18%;
+  right: 8%;
+  opacity: 0.05;
+  animation: cloudDrift 5.5s ease-in-out 1s infinite alternate;
+}
+
+/* ── Brand ── */
+.brand {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* هالة ضوئية خلف اللوجو */
+.halo {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  transform: translate(-50%, -25%) scale(0.6);
+  background: radial-gradient(
+    circle,
+    rgba(110, 231, 183, 0.18),
+    rgba(147, 197, 253, 0.08) 45%,
+    transparent 70%
+  );
+  opacity: 0;
+  animation: haloIn 2.4s ease 0.4s forwards;
+  pointer-events: none;
+}
+
+/* ── اللوجو ── */
+.logoWrap {
+  width: 200px;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 0 6px rgba(110, 231, 183, 0.45));
+  will-change: transform, opacity;
+}
+
+.logoSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* نبض توهج عند اكتمال الرسم */
+.done {
+  animation: glowPulse 0.9s ease-in-out;
+}
+
+/* الدخول داخل اللوجو */
+.leaving .logoWrap {
+  animation: zoomThrough 1.4s cubic-bezier(0.7, 0, 0.2, 1) forwards;
+}
+
+/* المسار الشبحي */
+.ghost {
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 8;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* رسم البوردر: مفرغ من الداخل */
+.draw {
+  fill: none;
+  stroke: url(#logoGrad);
+  stroke-width: 12;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  animation:
+    drawStroke 1.3s cubic-bezier(0.65, 0, 0.35, 1) forwards,
+    showStroke 0.01s linear forwards;
+  animation-delay: calc(0.3s + var(--i) * 0.55s);
+}
+
+/* ── Tagline ── */
+.tagline {
+  font-family: var(--font-caveat);
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 2px;
+  margin: 0;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: taglineIn 0.9s ease 2.6s forwards;
+}
+
+.leaving .tagline,
+.leaving .progressWrapper,
+.leaving .trees,
+.leaving .cloud1,
+.leaving .cloud2,
+.leaving .particle,
+.leaving .halo {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  animation: none;
+}
+
+/* ── Progress ── */
+.progressWrapper {
+  position: relative;
+  z-index: 2;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #6ee7b7, #93c5fd);
+  border-radius: 99px;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px rgba(110, 231, 183, 0.6);
+}
+
+.progressText {
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 3px;
+}
+
+/* ── Keyframes ── */
+@keyframes drawStroke {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes showStroke {
+  to { opacity: 1; }
+}
+
+@keyframes haloIn {
+  to { opacity: 1; transform: translate(-50%, -25%) scale(1); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(110, 231, 183, 0.45)); }
+  50%      { filter: drop-shadow(0 0 26px rgba(147, 197, 253, 0.95)); }
+}
+
+@keyframes taglineIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes zoomThrough {
+  0%   { transform: scale(1);   opacity: 1; }
+  25%  { transform: scale(0.9); opacity: 1; }   /* انقباض صغير قبل الانطلاق */
+  75%  { opacity: 1; }
+  100% { transform: scale(55);  opacity: 0; }
+}
+
+@keyframes wrapperFade {
+  to { opacity: 0; visibility: hidden; }
+}
+
+@keyframes floatUp {
+  from { transform: translateY(0px) scale(1);      opacity: 0.12; }
+  to   { transform: translateY(-22px) scale(1.15); opacity: 0.28; }
+}
+
+@keyframes treeSway {
+  0%, 100% { transform: rotate(-2deg) scaleX(1); }
+  50%      { transform: rotate(2deg) scaleX(1.04); }
+}
+
+@keyframes cloudDrift {
+  from { transform: translateX(-8px); }
+  to   { transform: translateX(8px); }
+}

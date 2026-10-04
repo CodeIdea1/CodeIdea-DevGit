@@ -7,17 +7,17 @@ import styles from "./HeroSection.module.css";
 
 // ترتيب التفاعل بالتسلسل
 const STEPS = [
-  { id: "layout", src: "/lay.webp",   nextScreen: "/center-screen-layout.webp",                    label: "Layout",     arrowDir: "right" },
+  { id: "layout", src: "/yy.webp",   nextScreen: "/center-screen-layout.webp",                    label: "Layout",     arrowDir: "right" },
   { id: "texts",  src: "/text.webp",  nextScreen: "/center-screen-layout-text.webp",               label: "Your Text",  arrowDir: "left"  },
   { id: "img",    src: "/img.webp",   nextScreen: "/center-screen-layout-text-img2.webp",           label: "Your Image", arrowDir: "right" },
   { id: "card",   src: "/card.webp",  nextScreen: "/center-screen-layout-text-img-card2.webp",     label: "Card",       arrowDir: "right" },
-  { id: "logo",   src: "/imgg.webp",  nextScreen: "/center-screen-layout-text-img-card-logo1.webp", label: "Your Logo",  arrowDir: "left"  },
+  { id: "logo",   src: "/logo.webp",  nextScreen: "/center-screen-layout-text-img-card-logo1.webp", label: "Your Logo",  arrowDir: "left"  },
 ];
 
 
 // مواضع دائرية حول الشاشة المركزية (top%, left%)
 const ORBIT_POSITIONS = [
-  { top: 20, left: 28 },
+  { top: 85, left: 28 },
   { top: 20, left: 58 },
   { top: 45, left: 68 },
   { top: 68, left: 55 },
@@ -69,7 +69,7 @@ export default function HeroSection() {
   function tiltStyle(id: string, flying: boolean): React.CSSProperties {
     const t = tilts[id];
     return {
-      transform: `translate(-50%, -50%) perspective(800px) rotateX(${t.rx}deg) rotateY(${t.ry}deg) scale(${t.scale})`,
+      transform: `perspective(800px) rotateX(${t.rx}deg) rotateY(${t.ry}deg) scale(${t.scale})`,
       transition: "transform 0.15s ease-out, opacity 0.3s ease",
       opacity: t.scale > 1 ? 1 : 0.9,
       visibility: flying ? "hidden" : "visible",
@@ -91,7 +91,11 @@ export default function HeroSection() {
 
   function fly(id: string, src: string, nextScreen: string) {
     const ref = refs[id];
-    if (!ref.current || !screenRef.current || !sectionRef.current) return;
+    if (!ref.current || !screenRef.current || !sectionRef.current) {
+      console.log("fly blocked:", { ref: ref.current, screen: screenRef.current, section: sectionRef.current });
+      return;
+    }
+    console.log("fly started", id);
 
     const section = sectionRef.current.getBoundingClientRect();
     const el      = ref.current.getBoundingClientRect();
@@ -133,8 +137,8 @@ export default function HeroSection() {
       <div className={styles.glassOverlay} />
 
       <div className={styles.cloudTrack}>
-        <img src="/cloud.webp" alt="" className={styles.cloudSlide} />
-        <img src="/cloud.webp" alt="" className={styles.cloudSlide} />
+        <img src="/cloud-slide.webp" alt="" className={styles.cloudSlide} />
+        <img src="/cloud-slide.webp" alt="" className={styles.cloudSlide} />
       </div>
 
       <img
@@ -151,10 +155,11 @@ export default function HeroSection() {
             </span>
           ))}
         </span>
-        <img src="/arrow.webp" alt="" className={styles.screenLabelArrow} />
+        <img src="/arrow2.webp" alt="" className={styles.screenLabelArrow} />
       </div>
 
       <img
+        ref={screenRef}
         src={screenSrc}
         alt="Screen"
         className={`${styles.screenCenter}${screenAnim ? " " + styles.screenChanged : ""}`}
@@ -214,7 +219,7 @@ export default function HeroSection() {
         const isActive = i === step;
         return (
           <div key={id} className={`${styles.stepWrapper} ${stepCls[id]}`}>
-            <div className={`${styles.hint} ${arrowDir === "left" ? styles.hintLeft : styles.hintRight} ${isActive ? styles.hintActive : styles.hintIdle}`}>
+            <div className={`${styles.hint} ${id === "layout" ? styles.hintReverseRight : arrowDir === "left" ? styles.hintLeft : styles.hintRight} ${isActive ? styles.hintActive : styles.hintIdle}`}>
               <span className={styles.hintText}>
                 {label.split("").map((char, ci) => (
                   <span key={ci} className={styles.hintChar} style={{ animationDelay: `${ci * 0.06}s` }}>
@@ -223,7 +228,7 @@ export default function HeroSection() {
                 ))}
               </span>
               <span className={styles.hintArrow}>
-                <img src="/arrow.webp" alt="" className={`${styles.arrowImg} ${arrowDir === "left" ? styles.arrowLeft : ""} ${isActive ? styles.arrowActive : ""}`} />
+                <img src={id === "layout" ? "/arrow-left.webp" : "/arrow2.webp"} alt="" className={`${styles.arrowImg} ${arrowDir === "left" ? styles.arrowLeft : ""} ${isActive ? styles.arrowActive : ""}`} />
               </span>
             </div>
             <img
@@ -235,6 +240,7 @@ export default function HeroSection() {
               onMouseMove={isActive ? e => setTilts(p => ({ ...p, [id]: calcTilt(e) })) : undefined}
               onMouseLeave={isActive ? () => setTilts(p => ({ ...p, [id]: { rx: 0, ry: 0, scale: 1 } })) : undefined}
               onClick={() => {
+                console.log("clicked", id, "isActive:", isActive, "flyState:", flyState, "ref:", refs[id]?.current);
                 if (!isActive || flyState) return;
                 setTilts(p => ({ ...p, [id]: { rx: 0, ry: 0, scale: 1 } }));
                 fly(id, src, nextScreen);
@@ -244,14 +250,15 @@ export default function HeroSection() {
         );
       })}
 
-      <Image src="/hero3.webp" alt="Hero" width={0} height={0} sizes="100vw" className={styles.heroBottom} />
+      <Image src="/back1.webp" alt="Hero" width={0} height={0} sizes="100vw" className={styles.heroBottom} />
 
       <div className={styles.content}>
         <div className={styles.scene}>
           <Image src="/tree1.webp"  alt="Tree 1" width={1211} height={1299} className={`${styles.tree} ${styles.tree1}`} />
           <Image src="/tree2.webp"  alt="Tree 2" width={1422} height={1106} className={`${styles.tree} ${styles.tree2}`} />
           <Image src="/tree3.webp"  alt="Tree 3" width={1319} height={1193} className={`${styles.tree} ${styles.tree3}`} />
-          <Image src="/rock11.webp" alt="Rock"   width={1530} height={1028} className={styles.rockImage} />
+          <Image src="/rock-1.webp" alt="Rock"   width={1530} height={1028} className={styles.rockImage} />
+          <Image src="/rock22.webp" alt="Rock 2" width={1530} height={1028} className={styles.rockImage2} />
         </div>
       </div>
 

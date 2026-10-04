@@ -117,7 +117,7 @@ export default function HeroWave({ className }: { className?: string }) {
   return (
     <div ref={wrapRef} className={className} style={{ position: "relative" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img ref={imgRef} src="/hero3.webp" alt="Hero" style={{ width:"100%", height:"auto", display:"block" }} />
+      <img ref={imgRef} src="/back1.webp" alt="Hero" style={{ width:"100%", height:"auto", display:"block" }} />
       <canvas ref={canvasRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none" }} />
     </div>
   );
