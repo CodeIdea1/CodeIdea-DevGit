@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Caveat, Bodoni_Moda, Anton, Orbitron } from "next/fo
 import "./globals.css";
 import SmoothScroll from "./components/SmoothScroll";
 import LoadingScreen from "./components/LoadingScreen";
+import Navbar from "./components/Navbar/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,8 +46,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} ${bodoniModa.variable} ${orbitron.variable} h-full antialiased`}
     >
       <body>
-        <LoadingScreen />
+        {/* <LoadingScreen /> */}
         <SmoothScroll />
+        <Navbar />
         {children}
       </body>
     </html>

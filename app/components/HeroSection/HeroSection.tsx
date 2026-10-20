@@ -1,20 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Head from "./Head";
 import styles from "./HeroSection.module.css";
 
 const STEPS = [
-  { id: "layout", src: "/yy.webp",   nextScreen: "/center-screen-layout.webp",                    label: "Layout",     arrowDir: "right" },
-  { id: "texts",  src: "/text.webp",  nextScreen: "/center-screen-layout-text.webp",                label: "Your Text",  arrowDir: "right"  },
-  { id: "img",    src: "/img.webp",   nextScreen: "/center-screen-layout-text-img2.webp",            label: "Your Image", arrowDir: "right" },
-  { id: "card",   src: "/card.webp",  nextScreen: "/center-screen-layout-text-img-card2.webp",      label: "Card",       arrowDir: "right" },
-  { id: "logo",   src: "/logo.webp",  nextScreen: "/center-screen-layout-text-img-card-logo1.webp", label: "Your Logo",  arrowDir: "left"  },
+  { id: "layout", src: "/yy.webp",   nextScreen: "/center-screen-layout.webp",                     label: "Layout",     arrowDir: "right" },
+  { id: "texts",  src: "/text.webp",  nextScreen: "/center-screen-layout-text.webp",                 label: "Your Text",  arrowDir: "right"  },
+  { id: "img",    src: "/img.webp",   nextScreen: "/center-screen-layout-text-img2.webp",             label: "Your Image", arrowDir: "right" },
+  { id: "logo",   src: "/logo1.webp",  nextScreen: "/center-screen-layout-text-img-card-logo1.webp",  label: "Your Logo",  arrowDir: "left"  },
 ];
 
 const ORBIT_POSITIONS = [
-  { top: 85, left: 28 },
+  { top: 55, left: 28 },
   { top: 20, left: 58 },
   { top: 45, left: 68 },
   { top: 68, left: 55 },
@@ -22,24 +21,31 @@ const ORBIT_POSITIONS = [
   { top: 45, left: 18 },
 ];
 
-type FloaterPos = { top: number; left: number; spinning: boolean };
+const STEP_POSITIONS: Record<string, { top: number; left: number }> = {
+  layout: { top: 57, left: 50 },
+  texts:  { top: 40, left: 72 },
+  img:    { top: 47, left: 25 },
+  logo:   { top: 35, left: 55 },
+};
+
+
 type FlyState   = { src: string; x: number; y: number; dx: number; dy: number };
 type Tilt       = { rx: number; ry: number; scale: number };
+type FloaterPos = { top: number; left: number; spinning: boolean };
 
 export default function HeroSection() {
   const [floaterPositions, setFloaterPositions] = useState<FloaterPos[]>([
-    { top: ORBIT_POSITIONS[0].top, left: ORBIT_POSITIONS[0].left, spinning: false },
-    { top: ORBIT_POSITIONS[3].top, left: ORBIT_POSITIONS[3].left, spinning: false },
+    { top: 60, left: 25, spinning: false },
   ]);
   const refs: Record<string, React.RefObject<HTMLImageElement | null>> = {
     layout: useRef<HTMLImageElement>(null),
     texts:  useRef<HTMLImageElement>(null),
     img:    useRef<HTMLImageElement>(null),
-    card:   useRef<HTMLImageElement>(null),
     logo:   useRef<HTMLImageElement>(null),
   };
   const screenRef  = useRef<HTMLImageElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
+  const cursorRef  = useRef<HTMLImageElement>(null);
 
   const [screenSrc,     setScreenSrc]     = useState("/first-screen.webp");
   const [screenAnim,    setScreenAnim]    = useState(false);
@@ -50,6 +56,25 @@ export default function HeroSection() {
   const [tilts,         setTilts]         = useState<Record<string, Tilt>>(
     Object.fromEntries(STEPS.map(s => [s.id, { rx: 0, ry: 0, scale: 1 }]))
   );
+  const [cursorRotate,  setCursorRotate]  = useState(0);
+
+  // حساب زاوية الـ cursor نحو الصورة النشطة الحالية بالبكسل الحقيقي
+  function updateCursorRotation(nextStep: number) {
+    requestAnimationFrame(() => {
+      const activeId = STEPS[nextStep]?.id;
+      if (!activeId || !cursorRef.current || !refs[activeId]?.current || !sectionRef.current) return;
+      const section = sectionRef.current.getBoundingClientRect();
+      const cursor  = cursorRef.current.getBoundingClientRect();
+      const target  = refs[activeId].current!.getBoundingClientRect();
+      const cx = cursor.left  + cursor.width  / 2 - section.left;
+      const cy = cursor.top   + cursor.height / 2 - section.top;
+      const tx = target.left  + target.width  / 2 - section.left;
+      const ty = target.top   + target.height / 2 - section.top;
+      setCursorRotate(Math.atan2(ty - cy, tx - cx) * (180 / Math.PI));
+    });
+  }
+
+  useEffect(() => { updateCursorRotation(0); }, []);
 
   function calcTilt(e: React.MouseEvent<HTMLImageElement>): Tilt {
     const el = e.currentTarget;
@@ -75,12 +100,13 @@ export default function HeroSection() {
     setFloaterPositions(prev => prev.map(f => ({ ...f, spinning: true })));
     setTimeout(() => {
       const used: number[] = [];
-      setFloaterPositions(prev => prev.map(() => {
+      const next = ORBIT_POSITIONS.map(() => {
         let idx: number;
         do { idx = Math.floor(Math.random() * ORBIT_POSITIONS.length); } while (used.includes(idx));
         used.push(idx);
-        return { top: ORBIT_POSITIONS[idx].top, left: ORBIT_POSITIONS[idx].left, spinning: false };
-      }));
+        return ORBIT_POSITIONS[idx];
+      });
+      setFloaterPositions([{ ...next[0], spinning: false }]);
     }, 600);
   }
 
@@ -106,7 +132,11 @@ export default function HeroSection() {
         setFlyState(null);
         setShowFlash(true);
         setDone(prev => new Set(prev).add(id));
-        setStep(prev => prev + 1);
+        setStep(prev => {
+          const next = prev + 1;
+          setTimeout(() => updateCursorRotation(next), 800);
+          return next;
+        });
         spinFloaters();
         setTimeout(() => {
           setShowFlash(false);
@@ -134,7 +164,11 @@ export default function HeroSection() {
       setFlyState(null);
       setShowFlash(true);
       setDone(prev => new Set(prev).add(id));
-      setStep(prev => prev + 1);
+      setStep(prev => {
+        const next = prev + 1;
+        setTimeout(() => updateCursorRotation(next), 800);
+        return next;
+      });
       spinFloaters();
       setTimeout(() => {
         setShowFlash(false);
@@ -149,8 +183,7 @@ export default function HeroSection() {
     layout: styles.imgLayout,
     texts:  styles.imgTexts,
     img:    styles.imgMain,
-    card:   styles.imgCard,
-    logo:   styles.screenLeft,
+    logo:   styles.imgLogo,
   };
 
   return (
@@ -160,8 +193,11 @@ export default function HeroSection() {
       <div className={styles.cloudTrack}>
         <img src="/cloud-slide.webp" alt="" className={styles.cloudSlide} />
         <img src="/cloud-slide.webp" alt="" className={styles.cloudSlide} />
+        <img src="/cloud-slide.webp" alt="" className={styles.cloudSlide} />
+        <img src="/cloud-slide.webp" alt="" className={styles.cloudSlide} />
       </div>
 
+      <div className={styles.heroStage}>
       <img src="/cloud3.webp" alt="" className={styles.ccBg} />
 
       <div className={styles.screenLabel}>
@@ -184,6 +220,93 @@ export default function HeroSection() {
       />
 
       {showFlash && <div className={styles.screenFlash} />}
+
+      {(["coding.webp"] as const).map((src, i) => (
+        <img
+          key={src}
+          src={`/${src}`}
+          alt=""
+          className={`${styles.floater} ${styles.imgCoding}`}
+          style={{}}
+        />
+      ))}
+
+      {/* cursor يتحرك دائماً نحو الصورة النشطة الحالية */}
+      {step < STEPS.length && (() => {
+        const activePos = STEP_POSITIONS[STEPS[step].id];
+        const isLogo = STEPS[step].id === "logo";
+        return (
+          <img
+            ref={cursorRef}
+            src="/cursor.webp"
+            alt=""
+            className={styles.floater}
+            style={{
+              top:      `${activePos.top + 8 + (isLogo ? 4 : 0)}%`,
+              left:     `${activePos.left + 3 - (isLogo ? 2 : 0)}%`,
+              maxWidth: "3%",
+              rotate:   `${cursorRotate * (isLogo ? -0.05 : -0.12)}deg`,
+              transition: "top 0.7s cubic-bezier(0.34,1.56,0.64,1), left 0.7s cubic-bezier(0.34,1.56,0.64,1), rotate 0.4s ease",
+              zIndex: 60,
+            }}
+          />
+        );
+      })()}
+
+      {STEPS.map(({ id, src, nextScreen, label, arrowDir }, i) => {
+        if (done.has(id)) return null;
+        const isActive = i === step;
+        return (
+          <div key={id} className={`${styles.stepWrapper} ${id === "layout" ? styles.stepWrapperBehind : ""} ${stepCls[id]}`}>
+            <div className={`${styles.hint} ${id === "layout" ? styles.hintReverseRight : id === "texts" ? styles.hintReverseRight : id === "img" ? styles.hintImg : id === "logo" ? styles.hintLogo : arrowDir === "left" ? styles.hintLeft : styles.hintRight} ${id === "layout" && step === 0 ? styles.hintLayoutActive : ""} ${id === "texts" ? styles.hintTexts : ""} ${id === "texts" && step === 1 ? styles.hintTextsActive : ""} ${isActive ? styles.hintActive : styles.hintIdle}`} style={id === "layout" ? { left: "76%" } : undefined}>
+              <div style={id === "logo" ? { display: "flex", alignItems: "center", gap: "4px", transform: "rotate(-8deg)" } : { display: "contents" }}>
+              <span className={styles.hintText}>
+                {label.split("").map((char, ci) => (
+                  <span key={ci} className={styles.hintChar} style={{ animationDelay: `${ci * 0.06}s` }}>
+                    {char === " " ? "\u00A0" : char}
+                  </span>
+                ))}
+              </span>
+              <span className={styles.hintArrow} style={id === "texts" ? { marginBottom: "1vw", marginRight: ".3vw", transform: "rotate(-15deg)" } : id === "logo" ? { position: "relative", top: "1.5vw", left: "-110px" } : undefined}>
+                <img src={id === "layout" || id === "texts" || id === "logo" ? "/arrow-left.webp" : id === "img" ? "/arrow-flip.webp" : "/arrow2.webp"} alt="" className={`${styles.arrowImg} ${id !== "logo" && arrowDir === "left" ? styles.arrowLeft : ""} ${isActive ? styles.arrowActive : ""}`} />
+              </span>
+              </div>
+            </div>
+            <img
+              ref={refs[id] as React.RefObject<HTMLImageElement>}
+              src={src}
+              alt={label}
+              className={styles.stepImg}
+              style={tiltStyle(id, flyState?.src === src)}
+              onMouseMove={isActive ? e => setTilts(p => ({ ...p, [id]: calcTilt(e) })) : undefined}
+              onMouseLeave={isActive ? () => setTilts(p => ({ ...p, [id]: { rx: 0, ry: 0, scale: 1 } })) : undefined}
+              onClick={() => {
+                if (!isActive || flyState) return;
+                setTilts(p => ({ ...p, [id]: { rx: 0, ry: 0, scale: 1 } }));
+                fly(id, src, nextScreen);
+              }}
+            />
+          </div>
+        );
+      })}
+
+      <Image src="/hero-back-9.webp" alt="Hero" width={0} height={0} sizes="100vw" className={styles.heroBottom} />
+
+      <div className={styles.content}>
+        <div className={styles.scene}>
+          <Image src="/tree1.webp"  alt="Tree 1" width={1211} height={1299} className={`${styles.tree} ${styles.tree1}`} />
+          <Image src="/tree2.webp"  alt="Tree 2" width={1422} height={1106} className={`${styles.tree} ${styles.tree2}`} />
+          <Image src="/tree3.webp"  alt="Tree 3" width={1319} height={1193} className={`${styles.tree} ${styles.tree3}`} />
+          <Image src="/rock-1.webp" alt="Rock"   width={1530} height={1028} className={styles.rockImage} />
+          <Image src="/rock22.webp" alt="Rock 2" width={1530} height={1028} className={styles.rockImage2} />
+        </div>
+      </div>
+
+      <div className={styles.personWrapper}>
+        <Image src="/person.webp" alt="Person" width={1145} height={1374} className={styles.personImage} />
+        <Head className={styles.headImage} />
+      </div>
+      </div>
 
       {flyState && (
         <>
@@ -213,74 +336,6 @@ export default function HeroSection() {
           />
         </>
       )}
-
-      {(["coding.webp", "cursor.webp"] as const).map((src, i) => (
-        <img
-          key={src}
-          src={`/${src}`}
-          alt=""
-          className={`${styles.floater} ${floaterPositions[i].spinning ? styles.floaterSpin : ""}`}
-          style={{
-            top:  `${floaterPositions[i].top}%`,
-            left: `${floaterPositions[i].left}%`,
-            transition: floaterPositions[i].spinning
-              ? "none"
-              : "top 0.7s cubic-bezier(0.34,1.56,0.64,1), left 0.7s cubic-bezier(0.34,1.56,0.64,1)",
-          }}
-        />
-      ))}
-
-      {STEPS.map(({ id, src, nextScreen, label, arrowDir }, i) => {
-        if (done.has(id)) return null;
-        const isActive = i === step;
-        return (
-          <div key={id} className={`${styles.stepWrapper} ${id === "layout" ? styles.stepWrapperBehind : ""} ${stepCls[id]}`}>
-            <div className={`${styles.hint} ${id === "layout" || id === "texts" ? styles.hintReverseRight : arrowDir === "left" ? styles.hintLeft : styles.hintRight} ${isActive ? styles.hintActive : styles.hintIdle}`}>
-              <span className={styles.hintText}>
-                {label.split("").map((char, ci) => (
-                  <span key={ci} className={styles.hintChar} style={{ animationDelay: `${ci * 0.06}s` }}>
-                    {char === " " ? "\u00A0" : char}
-                  </span>
-                ))}
-              </span>
-              <span className={styles.hintArrow}>
-                <img src={id === "layout" || id === "texts" ? "/arrow-left.webp" : "/arrow2.webp"} alt="" className={`${styles.arrowImg} ${arrowDir === "left" ? styles.arrowLeft : ""} ${isActive ? styles.arrowActive : ""}`} />
-              </span>
-            </div>
-            <img
-              ref={refs[id] as React.RefObject<HTMLImageElement>}
-              src={src}
-              alt={label}
-              className={styles.stepImg}
-              style={tiltStyle(id, flyState?.src === src)}
-              onMouseMove={isActive ? e => setTilts(p => ({ ...p, [id]: calcTilt(e) })) : undefined}
-              onMouseLeave={isActive ? () => setTilts(p => ({ ...p, [id]: { rx: 0, ry: 0, scale: 1 } })) : undefined}
-              onClick={() => {
-                if (!isActive || flyState) return;
-                setTilts(p => ({ ...p, [id]: { rx: 0, ry: 0, scale: 1 } }));
-                fly(id, src, nextScreen);
-              }}
-            />
-          </div>
-        );
-      })}
-
-      <Image src="/back1.webp" alt="Hero" width={0} height={0} sizes="100vw" className={styles.heroBottom} />
-
-      <div className={styles.content}>
-        <div className={styles.scene}>
-          <Image src="/tree1.webp"  alt="Tree 1" width={1211} height={1299} className={`${styles.tree} ${styles.tree1}`} />
-          <Image src="/tree2.webp"  alt="Tree 2" width={1422} height={1106} className={`${styles.tree} ${styles.tree2}`} />
-          <Image src="/tree3.webp"  alt="Tree 3" width={1319} height={1193} className={`${styles.tree} ${styles.tree3}`} />
-          <Image src="/rock-1.webp" alt="Rock"   width={1530} height={1028} className={styles.rockImage} />
-          <Image src="/rock22.webp" alt="Rock 2" width={1530} height={1028} className={styles.rockImage2} />
-        </div>
-      </div>
-
-      <div className={styles.personWrapper}>
-        <Image src="/person1.webp" alt="Person" width={1145} height={1374} className={styles.personImage} />
-        <Head className={styles.headImage} />
-      </div>
     </section>
   );
 }

@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #F7F7F7;
+  background: linear-gradient(to bottom, #EEF0F4 0%, #F7F7F7 100%);
 }
 
 /* ===== Title ===== */
@@ -73,10 +73,19 @@
   height: auto;
   display: block;
   position: absolute;
-  top: 44px;
-  left: 34px;
+  top: 22px;
+  left: 20px;
   z-index: 1;
-  filter: brightness(0) opacity(0.3) blur(0.8px);
+  filter: brightness(0) opacity(0.4) blur(1.5px);
+}
+
+.customCursorSmall {
+  width: 52px;
+}
+
+.customCursorShadowImg.customCursorSmall {
+  top: 18px;
+  left: 16px;
 }
 
 .customCursorActive {

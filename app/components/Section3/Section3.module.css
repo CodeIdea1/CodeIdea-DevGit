@@ -1,0 +1,98 @@
+.section {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6vw 4vw;
+  background: linear-gradient(180deg, #f7f7f7 0%, #e7ecf3 100%);
+}
+
+.content {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  max-width: 780px;
+}
+
+.title {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: clamp(28px, 5vw, 74px);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: 0.02em;
+  color: #010d1a;
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  font-family: var(--font-caveat), cursive;
+  font-size: clamp(20px, 2.4vw, 36px);
+  color: #37506a;
+  margin-bottom: 2.4rem;
+}
+
+.buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.9rem 2rem;
+  border-radius: 999px;
+  border: 1.5px solid #010d1a;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+}
+
+.btnPrimary {
+  background: #010d1a;
+  color: #f7f7f7;
+}
+
+.btnPrimary:hover {
+  transform: translateY(-3px);
+  background: #0b2233;
+}
+
+.btnGhost {
+  background: transparent;
+  color: #010d1a;
+}
+
+.btnGhost:hover {
+  transform: translateY(-3px);
+  background: #010d1a;
+  color: #f7f7f7;
+}
+
+/* ── Scattered images ── */
+.imgWrap {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 14px;
+}
+
+.imgRightTop    { top: 10%;    right: 5%;  width: 16vw; }
+.imgRightBottom { bottom: 12%; right: 10%; width: 13vw; }
+.imgLeftTop     { top: 12%;    left: 5%;   width: 15vw; }
+.imgLeftBottom  { bottom: 10%; left: 9%;   width: 17vw; }
+.imgTop         { top: 4%;     left: 50%;  width: 13vw; translate: -50% 0; }
+.imgBottom      { bottom: 4%;  left: 50%;  width: 14vw; translate: -50% 0; }
