@@ -1,13 +1,32 @@
+/* noise مشترك بين Section2/3/4 */
+:root {
+  --noise-bg: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+}
+
 .section {
   position: relative;
   width: 100%;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 6vw 4vw;
-  background: linear-gradient(180deg, #f7f7f7 0%, #e7ecf3 100%);
+  background: transparent;
+}
+
+/* طبقة noise على باكجراوند الـ section — z-index: 0 تحت كل شيء */
+.section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: rgba(100, 180, 220, 0.12);
+  background-image: var(--noise-bg);
+  background-repeat: repeat;
+  background-size: 120px 120px;
+  opacity: 0.75;
 }
 
 .content {
@@ -15,11 +34,12 @@
   z-index: 5;
   text-align: center;
   max-width: 780px;
+  pointer-events: none;
 }
 
 .title {
   font-family: var(--font-orbitron), sans-serif;
-  font-size: clamp(28px, 5vw, 74px);
+  font-size: clamp(20px, 3.5vw, 52px);
   font-weight: 500;
   line-height: 1.12;
   letter-spacing: 0.02em;
@@ -87,12 +107,697 @@
   width: 100%;
   height: auto;
   display: block;
-  border-radius: 14px;
 }
 
-.imgRightTop    { top: 10%;    right: 5%;  width: 16vw; }
-.imgRightBottom { bottom: 12%; right: 10%; width: 13vw; }
-.imgLeftTop     { top: 12%;    left: 5%;   width: 15vw; }
-.imgLeftBottom  { bottom: 10%; left: 9%;   width: 17vw; }
-.imgTop         { top: 4%;     left: 50%;  width: 13vw; translate: -50% 0; }
-.imgBottom      { bottom: 4%;  left: 50%;  width: 14vw; translate: -50% 0; }
+/* الصور تخرج خارج الـ section */
+.imgRightTop    { top: 2%;    right: -16%; width: 36vw; }
+.imgRightBottom { bottom: 6%; right: -16%; width: 34vw; }
+.imgLeftTop     { top: 2%;    left: -16%;  width: 36vw; }
+.imgLeftBottom  { bottom: 6%; left: -16%;  width: 34vw; }
+.imgTop       {   top: -10%;
+  left: 50%;
+  width: 32vw;
+  margin-left: -16vw; }  /* نص العرض → توسيط ثابت */
+  /* شيلت: transform: translateX(-50%); */
+
+/* الصورة السفلية (qq.webp + صور المشاريع) = الكونتينر */
+.imgBottom {
+  bottom: -6%;   /* كان -12% */
+  left: 50%;
+  width: 36vw;                /* كان 30vw → أكبر */
+  aspect-ratio: 2 / 1;
+  transform: translateX(-50%);
+  overflow: hidden;           /* بيقص محتوى الأوفرلاي جوه حدود الكونتينر */
+  border-radius: 0;
+  z-index: 1;
+  background: linear-gradient(135deg, #98AFBB 0%, #E1E1DF 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5vw;
+  margin-left: auto;
+  margin-right: auto;
+  right: auto;
+  pointer-events: auto;
+  cursor: default;
+  /* عشان النص جوه الأوفرلاي يعيد الرسم بوضوح مع التكبير (بدل ما يتمط من نسخة صغيرة) */
+  will-change: auto;
+}
+
+.imgBottom .img,
+.coffeeOverlay .img {
+  display: block;
+  width: 36% !important;
+  height: auto !important;
+  object-fit: contain;
+  border-radius: 0 !important;
+  position: absolute;
+  left: 50%;
+  top: var(--img-top, 36%); /* بيتحرك من 36% لـ 66% مع سكرول الكونتينر (من الـ GSAP) */
+  transform: translate(-50%, -50%);
+}
+
+/* ── Hover Reveal ── */
+.coffeeOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  --mx: 0px;
+  --my: 0px;
+  --mr: 0px;
+
+  -webkit-mask-image: radial-gradient(
+    circle var(--mr) at var(--mx) var(--my),
+    #000 0%,
+    #000 40%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--mr) at var(--mx) var(--my),
+    #000 0%,
+    #000 40%,
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  transition: opacity 0.35s ease;
+}
+
+.coffeeOverlay .img {
+  opacity: 0;
+}
+
+.coffeeOverlay .imgActive {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════
+   Hover Badge
+   ═══════════════════════════════════════════ */
+.hoverBadge {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  width: 124px;
+  height: 124px;
+  border-radius: 50%;
+  background: #1d272e;
+  color: #f7f7f7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  text-align: center;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  will-change: transform;
+  font-family: var(--font-orbitron), sans-serif;
+  box-shadow: 0 10px 30px rgba(29, 39, 46, 0.25);
+}
+
+.hoverBadge::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1.5px solid #1d272e;
+  animation: badgePulse 1.8s ease-out infinite;
+}
+
+@keyframes badgePulse {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0;   }
+}
+
+.badgeSmall {
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.badgeMain {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  padding: 0 0.6rem;
+}
+
+.badgeArrow {
+  font-size: 1.1rem;
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+
+/* ═══════════════════════════════════════════
+   Overlay: جوه الكونتينر (مش fixed)
+   بحجم الشاشة، والـ GSAP بيصغّره 1/coverScale ويحط مكانه،
+   فيكبر مع الكونتينر ويستقر على حجم الشاشة في نهاية الـ scale.
+   ═══════════════════════════════════════════ */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4vw;
+  padding: clamp(140px, 22vh, 250px) clamp(24px, 6vw, 110px) 8vh;
+  box-sizing: border-box;
+  transform-origin: 0 0;
+  visibility: hidden;   /* GSAP بيفعّله (autoAlpha) أول ما الـ timeline يتجهز */
+  pointer-events: none;
+}
+
+.overlayLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 560px;
+}
+
+.mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+
+.maskInner {
+  display: block;
+  will-change: transform;
+}
+
+.ovTitle {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: clamp(26px, 4vw, 64px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: 0.02em;
+  color: #1d272e;
+  margin: 0 0 1.4rem;
+}
+
+.ovDesc {
+  font-size: clamp(14px, 1.15vw, 18px);
+  line-height: 1.6;
+  color: #1d272e;
+  margin: 0 0 2rem;
+}
+
+.ovDescLine {
+  display: block;
+  will-change: transform, opacity;
+}
+
+.ctaWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.9rem;
+  width: 100%;
+}
+
+.cta {
+  pointer-events: auto;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 0.95rem 2.2rem;
+  border-radius: 999px;
+  background: #1d272e;
+  color: #f7f7f7;
+  border: 1.5px solid #1d272e;
+  transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
+}
+
+.cta:hover {
+  background: transparent;
+  color: #1d272e;
+  transform: translateY(-3px);
+}
+
+.ctaLine {
+  display: block;
+  width: 100%;
+  height: 1.5px;
+  background: #1d272e;
+  transform-origin: left center;
+}
+
+.stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 3vh, 34px);
+  min-width: clamp(170px, 18vw, 280px);
+  text-align: left;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  will-change: transform, opacity;
+}
+
+.statValue {
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: clamp(30px, 3.6vw, 58px);
+  font-weight: 600;
+  line-height: 1;
+  color: #1d272e;
+}
+
+.statLabel {
+  font-size: clamp(12px, 1vw, 16px);
+  letter-spacing: 0.04em;
+  color: #1d272e;
+}
+
+.statLine {
+  display: block;
+  margin-top: 0.7rem;
+  height: 1px;
+  background: rgba(29, 39, 46, 0.35);
+  transform-origin: left center;
+}
+
+/* ═══════════════════════════════════════════
+   Project Viewer: عرض المشروع عند الضغط
+   ═══════════════════════════════════════════ */
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--accent);   /* الدايرة الخارجية بلون المشروع */
+}
+
+/* الدايرة الداخلية الغامقة (بتتأخر عن الخارجية فتظهر حلقة لونية) */
+.vStage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f3f1ec;
+  background:
+    radial-gradient(
+      900px 520px at 82% 18%,
+      color-mix(in srgb, var(--accent) 30%, transparent),
+      transparent 65%
+    ),
+    radial-gradient(
+      700px 420px at 8% 100%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 70%
+    ),
+    #0f161b;
+}
+
+.vGhost {
+  position: absolute;
+  left: 2vw;
+  bottom: -5vw;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 34vw;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* حالات البداية: بتمنع أي وميض قبل ما GSAP يشتغل
+   (الـ selectors مربوطة بـ .vStage عشان تبقى "pure" في CSS Modules) */
+.vChar   { display: inline-block; transform: translateY(115%); will-change: transform; }
+.vStage [data-v="chrome"],
+.vStage [data-v="fade"],
+.vStage [data-v="frame"] { opacity: 0; }
+
+.vClose {
+  position: absolute;
+  bottom: clamp(16px, 4vh, 40px);
+  right: clamp(20px, 6vw, 96px);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 241, 236, 0.28);
+  background: rgba(243, 241, 236, 0.06);
+  color: #f3f1ec;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
+}
+
+.vClose:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0f161b;
+  transform: rotate(-2deg) scale(1.04);
+}
+
+.vGrid {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) 1.45fr;
+  gap: clamp(24px, 4vw, 72px);
+  align-items: center;
+  padding: 10vh clamp(20px, 6vw, 96px) 13vh;
+}
+
+.vInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.1rem;
+}
+
+.vKicker {
+  margin: 0;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.vTitle {
+  margin: 0;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: clamp(44px, 7.4vw, 124px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.vMask {
+  display: inline-block;
+  overflow: hidden;
+  padding: 0.04em 0 0.1em;
+}
+
+.vDesc {
+  margin: 0;
+  max-width: 420px;
+  font-size: clamp(14px, 1.1vw, 17px);
+  line-height: 1.65;
+  color: rgba(243, 241, 236, 0.72);
+}
+
+.vChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.vChip {
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 241, 236, 0.28);
+  background: transparent;
+  color: #f3f1ec;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.vChip:hover {
+  border-color: var(--accent);
+}
+
+.vChipActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0f161b;
+}
+
+.vVisit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 0.4rem;
+  padding: 0.95rem 1.8rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #0f161b;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.vVisit span {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.vVisit:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.vVisit:hover span {
+  transform: translate(3px, -3px);
+}
+
+.vHint {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: rgba(243, 241, 236, 0.45);
+}
+
+/* ── إطار المتصفح ── */
+.vFrame {
+  height: min(64vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #1b252c;
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(243, 241, 236, 0.1),
+    0 0 90px color-mix(in srgb, var(--accent) 22%, transparent);
+  will-change: transform;
+}
+
+.vBar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  height: 38px;
+  background: #151e24;
+  border-bottom: 1px solid rgba(243, 241, 236, 0.08);
+}
+
+.vBar i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(243, 241, 236, 0.2);
+}
+
+.vBar i:nth-child(1) { background: #ff5f57; }
+.vBar i:nth-child(2) { background: #febc2e; }
+.vBar i:nth-child(3) { background: #28c840; }
+
+.vUrl {
+  margin: 0 auto;
+  padding: 4px 18px;
+  border-radius: 999px;
+  background: rgba(243, 241, 236, 0.07);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: rgba(243, 241, 236, 0.65);
+  transform: translateX(-20px);
+}
+
+.vScreen {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* الـ iframe بحجم 200% ومصغّر للنص، فالموقع يظهر بتخطيط ديسكتوب كامل */
+.vIframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+  border: 0;
+  transform: scale(0.5);
+  transform-origin: 0 0;
+  background: #fff;
+}
+
+.vLoader {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  background: #121b21;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.vLoader span {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid rgba(243, 241, 236, 0.15);
+  border-top-color: var(--accent);
+  animation: vSpin 0.8s linear infinite;
+}
+
+.vLoaderDone {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@keyframes vSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── التنقل بين مشروعين نفس الفئة (يمين / يسار) ── */
+.vNav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(16px, 4vh, 40px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 2.4vw, 34px);
+  pointer-events: none;
+}
+
+.vNav > * {
+  pointer-events: auto;
+}
+
+.vArrow {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid rgba(243, 241, 236, 0.28);
+  background: transparent;
+  color: #f3f1ec;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
+}
+
+.vArrow:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0f161b;
+  transform: scale(1.08);
+}
+
+.vDots {
+  display: flex;
+  gap: 10px;
+}
+
+.vDot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(243, 241, 236, 0.3);
+  cursor: pointer;
+  transition: width 0.4s ease, background 0.3s ease;
+}
+
+.vDotActive {
+  width: 34px;
+  background: var(--accent);
+}
+
+/* ── موبايل ── */
+@media (max-width: 768px) {
+  .overlay {
+    flex-direction: column;
+    gap: 2rem;
+    padding-top: 130px;
+  }
+
+  .stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1.2rem 2rem;
+    min-width: 0;
+  }
+
+  .stat {
+    min-width: 40%;
+  }
+
+  .hoverBadge {
+    display: none;
+  }
+
+  .vClose {
+    bottom: 76px;
+    right: 20px;
+  }
+
+  .vGrid {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 22px;
+    padding: 9vh 20px 14vh;
+    overflow-y: auto;
+  }
+
+  .vTitle {
+    font-size: clamp(40px, 15vw, 72px);
+  }
+
+  .vFrame {
+    height: 36vh;
+  }
+
+  .vDesc {
+    max-width: none;
+  }
+}

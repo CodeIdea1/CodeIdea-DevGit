@@ -46,7 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} ${bodoniModa.variable} ${orbitron.variable} h-full antialiased`}
     >
       <body>
-        {/* <LoadingScreen /> */}
+        <LoadingScreen />
         <SmoothScroll />
         <Navbar />
         {children}
