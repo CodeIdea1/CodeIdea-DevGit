@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
+import type { CSSProperties } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import styles from "./Section5.module.css";
@@ -15,71 +15,94 @@ interface Category {
   id: CatId;
   name: string;
   accent: string;
-  blurb: string;
-  tags: string[];
+  tagline: string;
+  cta: string;
   placeholder: string;
   styles: { label: string; tint: string }[];
   features: string[];
-  /* اسم العنصر اللي بيتضاف للمشهد مع كل خطوة */
-  build: [string, string, string, string];
 }
 
 const CATEGORIES: Category[] = [
   {
     id: "interior",
-    name: "Interior & Furniture",
+    name: "Interior",
     accent: "#e08e5c",
-    blurb: "Showrooms, lookbooks and configurators that make a room feel lived in before it is built.",
-    tags: ["3D rooms", "Configurator", "Lookbook"],
+    tagline: "Rooms that feel lived in",
+    cta: "Book a consultation",
     placeholder: "e.g. Nordic Nest Studio",
     styles: [
-      { label: "Minimal",      tint: "#e9e4da" },
-      { label: "Warm classic", tint: "#c08a5b" },
-      { label: "Modern dark",  tint: "#556a77" },
+      { label: "Minimal", tint: "#e9e4da" },
+      { label: "Warm classic", tint: "#d9a273" },
+      { label: "Modern dark", tint: "#7f93a1" },
     ],
     features: ["3D room viewer", "Product configurator", "Lookbook gallery", "Online store", "Book a consultation", "AR preview"],
-    build: ["Sofa", "Lamp and wall art", "Rug and plant", "Coffee table"],
   },
   {
     id: "estate",
     name: "Real Estate",
-    accent: "#4fd1c5",
-    blurb: "Listings, virtual tours and map search that turn browsers into booked viewings.",
-    tags: ["Listings", "Virtual tours", "Map search"],
+    accent: "#2fb5aa",
+    tagline: "Find a place to belong",
+    cta: "Book a viewing",
     placeholder: "e.g. Skyline Properties",
     styles: [
       { label: "Luxury", tint: "#d8c08a" },
       { label: "Modern", tint: "#7aa2c7" },
-      { label: "Urban",  tint: "#9aa5b5" },
+      { label: "Urban", tint: "#9aa5b5" },
     ],
     features: ["Listings and filters", "Virtual tours", "Interactive map", "Agent profiles", "Mortgage calculator", "Lead capture"],
-    build: ["Main tower", "Residence block", "Apartment block", "Map pin and trees"],
   },
   {
     id: "watch",
     name: "Watches",
-    accent: "#d4af37",
-    blurb: "Slow, precise showcases with 360° detail for brands that count every second.",
-    tags: ["360° viewer", "Collections", "Limited drops"],
+    accent: "#c9a227",
+    tagline: "Time, perfectly kept",
+    cta: "Shop the collection",
     placeholder: "e.g. Meridian Watches",
     styles: [
-      { label: "Gold",     tint: "#d4af37" },
-      { label: "Steel",    tint: "#aab4bd" },
-      { label: "Midnight", tint: "#2f4f9a" },
+      { label: "Gold", tint: "#e2c565" },
+      { label: "Steel", tint: "#aab4bd" },
+      { label: "Midnight", tint: "#5d7bc0" },
     ],
     features: ["360° product viewer", "Collection pages", "Limited drop countdown", "Online store", "Strap configurator", "Brand story timeline"],
-    build: ["Dial and time", "Chronograph", "Progress ring and date", "Lume and stitching"],
   },
 ];
 
 const STEPS = [
-  { label: "Brand",      title: "Tell us who you are",       hint: "Your name and the look you have in mind. Pick a direction and the scene changes with it." },
-  { label: "Features",   title: "What should it do?",        hint: "Choose everything you want on the site. You can change your mind later." },
-  { label: "Scope",      title: "Budget and timeline",       hint: "Rough numbers are fine. They help us plan the right build." },
-  { label: "Contact",    title: "Where do we reach you?",    hint: "We reply within 24 hours with a plan and a quote." },
+  { label: "Brand", title: "Tell us who you are", hint: "Pick your world and name your brand. The window starts taking shape." },
+  { label: "Features", title: "What should it do?", hint: "Choose everything you want. Each pick lands on your page." },
+  { label: "Scope", title: "Budget and timeline", hint: "Rough numbers are fine. They help us plan the right build." },
+  { label: "Contact", title: "Where do we reach you?", hint: "We reply within 24 hours with a plan and a quote." },
 ];
 
-const BUDGETS   = ["$1k – 3k", "$3k – 7k", "$7k – 15k", "$15k+"];
+const CAPTIONS = ["Shaping your hero", "Placing your features", "Mapping the launch", "Ready for takeoff"];
+
+/* الكلام اللي بيتكتب بخط اليد حوالين النافذة (زي الهيرو) */
+type Arrow = "dr" | "dl";
+interface Note { text: string; x: string; y: string; arrow: Arrow }
+const NOTES: Note[][] = [
+  [
+    { text: "your idea", x: "2%", y: "0%", arrow: "dr" },
+    { text: "your logo", x: "56%", y: "-1%", arrow: "dl" },
+  ],
+  [
+    { text: "layout", x: "2%", y: "0%", arrow: "dr" },
+    { text: "your features", x: "52%", y: "-1%", arrow: "dl" },
+  ],
+  [
+    { text: "your plan", x: "2%", y: "0%", arrow: "dr" },
+    { text: "your timeline", x: "52%", y: "-1%", arrow: "dl" },
+  ],
+  [
+    { text: "almost there", x: "2%", y: "0%", arrow: "dr" },
+    { text: "ready to fly", x: "56%", y: "-1%", arrow: "dl" },
+  ],
+];
+const NOTES_DONE: Note[] = [
+  { text: "it's live!", x: "4%", y: "0%", arrow: "dr" },
+  { text: "see you soon", x: "54%", y: "-1%", arrow: "dl" },
+];
+
+const BUDGETS = ["$1k – 3k", "$3k – 7k", "$7k – 15k", "$15k+"];
 const TIMELINES = ["2 – 4 weeks", "1 – 2 months", "Flexible"];
 
 /* لو عندك API route حط الرابط هنا (مثال: "/api/brief") وهيتبعت JSON بـ POST.
@@ -112,235 +135,125 @@ const canGo = (step: number, f: FormState) => {
   return f.name.trim().length > 1 && emailOk(f.email);
 };
 
-const HIDE = 1.05; /* لازم يطابق stroke-dashoffset في الـ CSS */
-
 /* ═══════════════════════════════════════════
-   أيقونات الكروت
+   عناصر صغيرة
    ═══════════════════════════════════════════ */
-function CardIcon({ id }: { id: CatId }) {
+function Cloud({ s, style, depth, still, wipe }: {
+  s: number; style?: CSSProperties; depth?: number; still?: boolean; wipe?: boolean;
+}) {
+  return (
+    <div
+      data-cloud={still ? undefined : ""}
+      data-z={depth}
+      data-wipe={wipe ? "" : undefined}
+      className={`${styles.cloud} ${wipe ? styles.wipe : ""}`}
+      style={{ "--s": `${s}px`, ...style } as CSSProperties}
+      aria-hidden="true"
+    />
+  );
+}
+
+function Art({ id }: { id: CatId }) {
   if (id === "interior") {
     return (
-      <svg viewBox="0 0 100 100" className={styles.icon} aria-hidden="true">
-        <path className={styles.iGlow} d="M38 42 L18 90 H82 L62 42 z" />
-        <path d="M38 42 l6 -22 h12 l6 22 z" />
-        <path d="M50 42 V84 M36 90 h28" />
+      <svg viewBox="0 0 120 100" className={styles.artSvg} aria-hidden="true">
+        <rect className={styles.artFill} x="30" y="10" width="34" height="24" rx="2" />
+        <rect className={styles.artLine} x="30" y="10" width="34" height="24" rx="2" />
+        <path className={styles.artLine} d="M36 28 l8 -9 l6 6 l5 -5 l6 8" />
+        <path className={styles.artFill} d="M14 56 h72 a6 6 0 0 1 6 6 v16 h-84 v-16 a6 6 0 0 1 6 -6z" />
+        <path className={styles.artLine} d="M14 56 h72 a6 6 0 0 1 6 6 v16 h-84 v-16 a6 6 0 0 1 6 -6z M8 66 h8 v12 h-8 z M84 66 h8 v12 h-8 z" />
+        <path className={styles.artLine} d="M104 80 V34 M97 34 l4 -12 h8 l4 12z" />
+        <path className={styles.artLine} d="M4 84 H116" />
       </svg>
     );
   }
   if (id === "estate") {
     return (
-      <svg viewBox="0 0 100 100" className={styles.icon} aria-hidden="true">
-        <path d="M12 90 V52 h18 v38 M38 90 V24 h26 v66 M72 90 V58 h16 v32 M6 90 H94" />
-        {[[44, 32], [54, 32], [44, 44], [54, 44], [44, 56], [54, 56]].map(([x, y], i) => (
-          <rect key={i} x={x} y={y} width="6" height="6" rx="1" className={styles.iWin} style={{ animationDelay: `${i * 0.18}s` }} />
+      <svg viewBox="0 0 120 100" className={styles.artSvg} aria-hidden="true">
+        <path className={styles.artFill} d="M18 90 V38 h26 v52z M48 90 V14 h28 v76z M80 90 V46 h24 v44z" />
+        <path className={styles.artLine} d="M18 90 V38 h26 v52 M48 90 V14 h28 v76 M80 90 V46 h24 v44 M6 90 H116" />
+        {[[54, 22], [64, 22], [54, 36], [64, 36], [54, 50], [64, 50], [24, 48], [34, 48], [86, 56], [94, 56]].map(([x, y], i) => (
+          <rect key={i} x={x} y={y} width="5" height="6" rx="1" className={styles.artWin} />
         ))}
       </svg>
     );
   }
   return (
-    <svg viewBox="0 0 100 100" className={styles.icon} aria-hidden="true">
-      <circle cx="50" cy="50" r="26" />
-      <path d="M41 24 l4 -14 h10 l4 14 M41 76 l4 14 h10 l4 -14" />
-      <path className={styles.iHand} d="M50 50 V32" />
-      <path className={styles.iHand2} d="M50 50 L61 57" />
+    <svg viewBox="0 0 120 100" className={styles.artSvg} aria-hidden="true">
+      <path className={styles.artFill} d="M52 4 h16 l-2 22 h-12z M52 96 h16 l-2 -22 h-12z" />
+      <path className={styles.artLine} d="M52 4 h16 l-2 22 M54 26 L52 4 M52 96 h16 l-2 -22 M54 74 L52 96" />
+      <circle className={styles.artFill} cx="60" cy="50" r="28" />
+      <circle className={styles.artLine} cx="60" cy="50" r="28" />
+      <circle className={styles.artLine} cx="60" cy="50" r="22" />
+      <path className={styles.artLine} d="M60 28 v5 M60 67 v5 M38 50 h5 M77 50 h5" />
+      <path className={styles.artHand} d="M60 50 V34 M60 50 L71 56" />
+      <circle className={styles.artDot} cx="60" cy="50" r="2.4" />
     </svg>
   );
 }
 
-/* ═══════════════════════════════════════════
-   المشاهد: كل خطوة بتضيف "طبقة" (data-layer)
-   data-d = خط بيترسم | data-f = تعبئة بتظهر | data-pop = عنصر بينط
-   ═══════════════════════════════════════════ */
-function InteriorScene() {
+function Plant({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
+  const leaf = "M0 0 C 5 -12, 15 -20, 26 -22 C 21 -11, 11 -3, 0 0z";
   return (
-    <>
-      <rect className={styles.wall} x="24" y="30" width="352" height="292" rx="18" />
-      <rect className={styles.floor} x="24" y="322" width="352" height="64" rx="14" />
-      <g className={styles.line}>
-        {/* 1: الكنبة */}
-        <g data-layer="1">
-          <path data-f className={styles.fillAcc} d="M114 212 h172 a14 14 0 0 1 14 14 v40 h-200 v-40 a14 14 0 0 1 14 -14 z" />
-          <path data-f className={styles.fillAcc} d="M100 266 h200 v34 a10 10 0 0 1 -10 10 h-180 a10 10 0 0 1 -10 -10 z" />
-          <path data-d pathLength={1} d="M114 212 h172 a14 14 0 0 1 14 14 v40 h-200 v-40 a14 14 0 0 1 14 -14 z" />
-          <path data-d pathLength={1} d="M100 266 h200 v34 a10 10 0 0 1 -10 10 h-180 a10 10 0 0 1 -10 -10 z" />
-          <path data-d pathLength={1} d="M80 236 h20 v74 h-20 a10 10 0 0 1 -10 -10 v-54 a10 10 0 0 1 10 -10 z" />
-          <path data-d pathLength={1} d="M320 236 h-20 v74 h20 a10 10 0 0 0 10 -10 v-54 a10 10 0 0 0 -10 -10 z" />
-          <path data-d pathLength={1} d="M200 266 v44" />
-          <path data-d pathLength={1} d="M104 310 v12 M296 310 v12" />
-        </g>
-        {/* 2: لمبة + براويز */}
-        <g data-layer="2">
-          <path data-d pathLength={1} d="M120 76 h64 v74 h-64 z" />
-          <path data-d pathLength={1} d="M128 138 l16 -22 l12 14 l10 -10 l10 18" />
-          <path data-d pathLength={1} d="M204 76 h76 v50 h-76 z" />
-          <path data-d pathLength={1} d="M242 101 m-12 0 a12 12 0 1 0 24 0 a12 12 0 1 0 -24 0" />
-          <path data-d pathLength={1} d="M355 322 V152 M337 322 h36" />
-          <path data-d pathLength={1} d="M333 152 l12 -44 h22 l12 44 z" />
-          <g data-f>
-            <path className={styles.glow} d="M336 154 L296 322 H376 L376 154 z" />
-          </g>
-        </g>
-        {/* 3: سجادة + نبتة */}
-        <g data-layer="3">
-          <path data-f className={styles.fillAcc} d="M84 346 a116 14 0 1 0 232 0 a116 14 0 1 0 -232 0" />
-          <path data-d pathLength={1} d="M84 346 a116 14 0 1 0 232 0 a116 14 0 1 0 -232 0" />
-          <g className={styles.sway}>
-            <path data-d pathLength={1} d="M28 322 l6 -34 h24 l6 34 z" />
-            <path data-d pathLength={1} d="M46 288 C 30 262, 34 240, 46 222" />
-            <path data-d pathLength={1} d="M46 288 C 62 266, 62 244, 50 226" />
-            <path data-d pathLength={1} d="M46 288 C 40 272, 22 266, 16 250" />
-          </g>
-        </g>
-        {/* 4: ترابيزة + قهوة */}
-        <g data-layer="4">
-          <path data-d pathLength={1} d="M150 350 h100 a4 4 0 0 1 0 8 h-100 a4 4 0 0 1 0 -8 z" />
-          <path data-d pathLength={1} d="M160 358 v22 M240 358 v22" />
-          <path data-d pathLength={1} d="M188 350 v-16 h22 v16" />
-          <path data-d pathLength={1} d="M210 338 a6 6 0 0 1 0 10" />
-          <g data-f>
-            <path className={styles.steam}  d="M194 328 c-5 -8 5 -12 0 -20" />
-            <path className={styles.steam2} d="M203 328 c-5 -8 5 -12 0 -20" />
-          </g>
-        </g>
-      </g>
-    </>
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      {[-70, -35, 0, 35, 70].map((r, i) => (
+        <path key={r} d={leaf} transform={`rotate(${r - 45})`} fill={i % 2 ? "#6f9150" : "#4d6e3c"} />
+      ))}
+    </g>
   );
 }
 
-function Windows({ cols, rows, x0, y0, dx, dy, w, h, offset }: {
-  cols: number; rows: number; x0: number; y0: number; dx: number; dy: number; w: number; h: number; offset: number;
-}) {
-  const out = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const i = offset + r * cols + c;
-      out.push(
-        <rect
-          key={i}
-          x={x0 + c * dx}
-          y={y0 + r * dy}
-          width={w}
-          height={h}
-          rx="2"
-          className={`${styles.win} ${(i * 7) % 10 < 6 ? styles.winLit : ""}`}
-          style={{ "--i": i } as CSSProperties}
-        />
-      );
-    }
-  }
-  return <>{out}</>;
-}
-
-function EstateScene() {
+function Rock() {
   return (
-    <>
-      <rect className={styles.wall} x="24" y="30" width="352" height="310" rx="18" />
-      <rect className={styles.floor} x="24" y="340" width="352" height="46" rx="14" />
-      <g className={styles.line}>
-        <path d="M24 340 H376" />
-        <circle cx="322" cy="86" r="22" />
-        {/* 1: البرج الرئيسي */}
-        <g data-layer="1">
-          <path data-f className={styles.tintFill} d="M150 340 V112 L170 90 H230 L250 112 V340 z" />
-          <path data-d pathLength={1} d="M150 340 V112 L170 90 H230 L250 112 V340" />
-          <Windows cols={4} rows={6} x0={162} y0={112} dx={22} dy={36} w={12} h={18} offset={0} />
-        </g>
-        {/* 2: عمارة اليسار */}
-        <g data-layer="2">
-          <path data-f className={styles.tintFill} d="M70 340 V190 H140 V340 z" />
-          <path data-d pathLength={1} d="M70 340 V190 H140 V340" />
-          <Windows cols={3} rows={4} x0={78} y0={204} dx={20} dy={34} w={12} h={16} offset={24} />
-        </g>
-        {/* 3: عمارة اليمين */}
-        <g data-layer="3">
-          <path data-f className={styles.tintFill} d="M260 340 V150 H334 V340 z" />
-          <path data-d pathLength={1} d="M260 340 V150 H334 V340" />
-          <path data-d pathLength={1} d="M270 150 V132 h54 V150" />
-          <Windows cols={3} rows={5} x0={272} y0={166} dx={22} dy={34} w={12} h={16} offset={36} />
-        </g>
-        {/* 4: دبوس الخريطة + شجر */}
-        <g data-layer="4">
-          <path data-d pathLength={1} d="M44 340 V324 M360 340 V324" />
-          <path data-d pathLength={1} d="M34 314 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0" />
-          <path data-d pathLength={1} d="M350 314 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0" />
-          <ellipse className={styles.ripple} cx="200" cy="90" rx="22" ry="5" />
-          <g data-pop>
-            <path className={styles.pin} d="M200 44 a14 14 0 0 1 14 14 c0 11 -14 26 -14 26 c0 0 -14 -15 -14 -26 a14 14 0 0 1 14 -14 z" />
-            <circle className={styles.pinDot} cx="200" cy="58" r="5" />
-          </g>
-        </g>
-      </g>
-    </>
+    <svg viewBox="0 0 300 170" className={styles.rockSvg} aria-hidden="true">
+      <defs>
+        <linearGradient id="rk5" x1="0" y1="0" x2="0.4" y2="1">
+          <stop offset="0" stopColor="#ecebe6" />
+          <stop offset="1" stopColor="#b3b0a8" />
+        </linearGradient>
+      </defs>
+      <ellipse cx="150" cy="160" rx="130" ry="8" fill="rgba(60,90,120,.22)" />
+      <path d="M8 80 L48 36 L118 20 L192 26 L252 44 L294 82 L272 120 L222 150 L150 162 L88 148 L38 118 z" fill="url(#rk5)" />
+      <path d="M48 36 L92 78 L118 20 M192 26 L176 84 L252 44 M92 78 L150 100 L176 84 M38 118 L92 78 M150 100 L150 162 M222 150 L176 84" fill="none" stroke="rgba(90,86,78,.28)" strokeWidth="1.6" strokeLinejoin="round" />
+      {[[70, 60], [120, 50], [170, 62], [225, 70], [100, 118], [190, 126], [140, 84], [250, 100], [60, 96]].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={i % 2 ? 1.6 : 2.4} fill="rgba(90,86,78,.35)" />
+      ))}
+      <Plant x={60} y={42} s={1.2} />
+      <Plant x={236} y={52} s={1.4} />
+      <Plant x={270} y={96} s={0.9} />
+    </svg>
   );
 }
 
-function WatchScene({ brand }: { brand: string }) {
-  const ticks = Array.from({ length: 12 }, (_, i) => {
-    const a = (i * 30 * Math.PI) / 180;
-    const r1 = i % 3 === 0 ? 70 : 79;
-    const r2 = 90;
-    const p = (r: number) => `${(200 + Math.sin(a) * r).toFixed(1)} ${(210 - Math.cos(a) * r).toFixed(1)}`;
-    return `M${p(r1)} L${p(r2)}`;
-  });
-  const lumes = Array.from({ length: 12 }, (_, i) => {
-    const a = (i * 30 * Math.PI) / 180;
-    return { x: 200 + Math.sin(a) * 62, y: 210 - Math.cos(a) * 62 };
-  });
-
+function ArrowSvg({ dir }: { dir: Arrow }) {
+  const d = dir === "dr"
+    ? "M4 6 C 30 0, 50 14, 52 34 M43 26 L52 37 L58 24"
+    : "M58 6 C 32 0, 12 14, 10 34 M4 24 L10 37 L19 25";
   return (
-    <>
-      {/* الحزام والعلبة (دايمًا ظاهرين) */}
-      <g className={styles.line}>
-        <path data-f className={styles.tintFill} style={{ opacity: 1 }} d="M152 100 L162 28 H238 L248 100 z M152 320 L162 392 H238 L248 320 z" />
-        <path d="M152 100 L162 28 H238 L248 100 M152 320 L162 392 H238 L248 320" />
-        <path d="M320 200 h14 v20 h-14 z" />
-        <circle cx="200" cy="210" r="120" />
-        <circle cx="200" cy="210" r="104" />
-        <circle className={styles.dial} cx="200" cy="210" r="96" />
-      </g>
+    <svg viewBox="0 0 62 42" className={`${styles.arrow} ${dir === "dr" ? styles.arrowR : styles.arrowL}`} aria-hidden="true">
+      <path data-arrow pathLength={1} d={d} />
+    </svg>
+  );
+}
 
-      <g className={styles.line}>
-        {/* 1: العلامات + اسم البراند */}
-        <g data-layer="1">
-          {ticks.map((d, i) => (
-            <path key={i} data-d pathLength={1} d={d} />
-          ))}
-          <text data-f className={styles.dialText} x="200" y="166" textAnchor="middle">
-            {(brand.trim() || "YOUR BRAND").slice(0, 12).toUpperCase()}
-          </text>
-        </g>
-        {/* 2: كرونوجراف */}
-        <g data-layer="2">
-          <path data-d pathLength={1} d="M150 232 a18 18 0 1 0 36 0 a18 18 0 1 0 -36 0" />
-          <path data-d pathLength={1} d="M214 232 a18 18 0 1 0 36 0 a18 18 0 1 0 -36 0" />
-          <g data-f>
-            <path className={styles.spin1} d="M168 232 V218" />
-            <path className={styles.spin2} d="M232 232 V219" />
-          </g>
-        </g>
-        {/* 3: حلقة التقدم + التاريخ */}
-        <g data-layer="3">
-          <path className={styles.ring} data-d pathLength={1} d="M200 98 a112 112 0 0 1 0 224 a112 112 0 0 1 0 -224" />
-          <path data-d pathLength={1} d="M256 200 h30 v20 h-30 z" />
-          <text data-f className={styles.dateText} x="271" y="214.5" textAnchor="middle">21</text>
-        </g>
-        {/* 4: لوم + غرز الحزام */}
-        <g data-layer="4">
-          {lumes.map((p, i) => (
-            <circle key={i} data-pop className={styles.lume} cx={p.x} cy={p.y} r="2.6" style={{ animationDelay: `${i * 0.15}s` }} />
-          ))}
-          <g data-f>
-            <path className={styles.stitch} d="M171 40 L178 96 M229 40 L222 96 M171 380 L178 324 M229 380 L222 324" />
-          </g>
-        </g>
-
-        {/* العقارب */}
-        <path data-hand="hour" className={styles.hHour} d="M200 210 V158" />
-        <path data-hand="min"  className={styles.hMin}  d="M200 210 V132" />
-        <path className={styles.secHand} d="M200 226 V122" />
-        <circle className={styles.hubDot} cx="200" cy="210" r="5" />
-      </g>
-    </>
+/* كل ميزة بتتحط في النافذة بتنزل من فوق وترتد */
+function Tile({ label }: { label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const t = gsap.fromTo(
+      el,
+      { y: -70, opacity: 0, scale: 0.5, rotate: gsap.utils.random(-14, 14) },
+      { y: 0, opacity: 1, scale: 1, rotate: 0, duration: 0.9, ease: "back.out(1.8)" }
+    );
+    return () => { t.kill(); };
+  }, []);
+  return (
+    <div ref={ref} className={styles.tile}>
+      <span className={styles.tileDot} />
+      <span>{label}</span>
+    </div>
   );
 }
 
@@ -349,29 +262,37 @@ function WatchScene({ brand }: { brand: string }) {
    ═══════════════════════════════════════════ */
 export default function Section5() {
   const sectionRef = useRef<HTMLElement>(null);
-  const panelRef   = useRef<HTMLDivElement>(null);
-  const wrapRef    = useRef<HTMLDivElement>(null);
-  const stageRef   = useRef<HTMLDivElement>(null);
-  const sceneColRef = useRef<HTMLDivElement>(null);
-  const tiltRef    = useRef<HTMLDivElement>(null);
-  const sceneRef   = useRef<SVGSVGElement>(null);
-  const bodyRef    = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const tiltRef = useRef<HTMLDivElement>(null);
+  const camRef = useRef<HTMLDivElement>(null);
+  const warmRef = useRef<HTMLDivElement>(null);
+  const sunRef = useRef<HTMLDivElement>(null);
+  const winRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLSpanElement>(null);
+  const badgeRef = useRef<HTMLSpanElement>(null);
+  const sparksRef = useRef<HTMLDivElement>(null);
+  const notesRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
-  const dirRef          = useRef(1);
-  const closingRef      = useRef(false);
-  const enteredRef      = useRef(false);
-  const sceneStartedRef = useRef(false);
+  const dirRef = useRef(1);
+  const stepRef = useRef(1);
+  const deskRef = useRef(false);
+  const stRef = useRef<ScrollTrigger | null>(null);
 
-  const [catId, setCatId]   = useState<CatId | null>(null);
-  const [origin, setOrigin] = useState({ x: 0, y: 0 });
-  const [step, setStep]     = useState(1);
-  const [form, setForm]     = useState<FormState>(EMPTY);
+  const [catId, setCatId] = useState<CatId>("interior");
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState<FormState>(EMPTY);
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
+  const [entered, setEntered] = useState(false);
 
-  const cat = CATEGORIES.find((c) => c.id === catId) ?? null;
+  const cat = CATEGORIES.find((c) => c.id === catId) ?? CATEGORIES[0];
+  const tint = cat.styles[form.styleIdx].tint;
   const done = status === "done";
+  const lvl = done ? 4 : step;
   const bodyKey = done ? "done" : String(step);
   const valid = canGo(step, form);
+
+  useEffect(() => { stepRef.current = step; }, [step]);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -382,71 +303,39 @@ export default function Section5() {
       features: f.features.includes(name) ? f.features.filter((x) => x !== name) : [...f.features, name],
     }));
 
-  /* ── اختيار الفئة: الدايرة بتتوسع من مكان الضغطة ── */
-  const choose = (id: CatId, e: ReactMouseEvent<HTMLButtonElement>) => {
-    const panel = panelRef.current;
-    if (!panel || catId) return;
-    const pr = panel.getBoundingClientRect();
-    let cx = e.clientX;
-    let cy = e.clientY;
-    if (e.detail === 0) {
-      const br = e.currentTarget.getBoundingClientRect();
-      cx = br.left + br.width / 2;
-      cy = br.top + br.height / 2;
-    }
-    dirRef.current = 1;
-    setOrigin({ x: cx - pr.left, y: cy - pr.top });
+  const pickCat = (id: CatId) => {
+    if (id === catId) return;
     setCatId(id);
+    setForm((f) => ({ ...f, styleIdx: 0, features: [] }));
   };
 
-  const cardGlow = (e: ReactMouseEvent<HTMLButtonElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+  /* ديسكتوب: الأزرار بتحرك السكرول، والسكرول هو اللي بيغير الخطوة.
+     موبايل: الأزرار بتغير الخطوة على طول */
+  const goTo = (target: number) => {
+    const t = Math.min(4, Math.max(1, target));
+    const st = stRef.current;
+    if (deskRef.current && st) {
+      const y = st.start + (st.end - st.start) * ((t - 1) / 3);
+      window.scrollTo({ top: y, behavior: "smooth" });
+    } else {
+      dirRef.current = t > stepRef.current ? 1 : -1;
+      setStep(t);
+    }
   };
 
-  const closeForm = () => {
-    const wrap = wrapRef.current;
-    const stage = stageRef.current;
-    const panel = panelRef.current;
-    const reset = () => {
-      closingRef.current = false;
-      enteredRef.current = false;
-      sceneStartedRef.current = false;
-      setCatId(null);
-      setStep(1);
-      setForm(EMPTY);
-      setStatus("idle");
-    };
-    if (!wrap || !stage || !panel) return reset();
-    if (closingRef.current) return;
-    closingRef.current = true;
+  const go = (d: number) => goTo(step + d);
 
-    const { x, y } = origin;
-    const r = Math.hypot(panel.offsetWidth, panel.offsetHeight) * 1.05;
-    const full = `circle(${r}px at ${x}px ${y}px)`;
-    const hide = `circle(0px at ${x}px ${y}px)`;
-
-    gsap
-      .timeline({ onComplete: reset })
-      .to(stage.querySelectorAll("[data-c], [data-s]"), { opacity: 0, y: -14, duration: 0.3, stagger: 0.02, ease: "power2.in" }, 0)
-      .fromTo(stage, { clipPath: full }, { clipPath: hide, duration: 0.75, ease: "power3.inOut" }, 0.1)
-      .fromTo(wrap,  { clipPath: full }, { clipPath: hide, duration: 0.75, ease: "power3.inOut" }, 0.26);
-  };
-
-  const go = (d: number) => {
-    dirRef.current = d;
-    setStep((s) => Math.min(4, Math.max(1, s + d)));
+  const restart = () => {
+    setStatus("idle");
+    setForm(EMPTY);
+    setCatId("interior");
+    goTo(1);
   };
 
   const submit = async () => {
-    if (!cat || !canGo(4, form) || status === "sending") return;
+    if (!canGo(4, form) || status === "sending") return;
     setStatus("sending");
-    const payload = {
-      category: cat.id,
-      ...form,
-      style: cat.styles[form.styleIdx].label,
-    };
+    const payload = { category: cat.id, ...form, style: cat.styles[form.styleIdx].label };
     try {
       if (ENDPOINT) {
         const res = await fetch(ENDPOINT, {
@@ -470,171 +359,242 @@ export default function Section5() {
     else submit();
   };
 
-  /* ── دخول العنوان والكروت مع السكرول ── */
+  /* ══════════ السكرول: المشهد كله بيتحرك مع السكرول ══════════ */
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const mm = gsap.matchMedia();
+
     const ctx = gsap.context(() => {
       const s = sectionRef.current;
-      const panel = panelRef.current;
-      if (!s || !panel) return;
+      const stage = stageRef.current;
+      if (!s || !stage) return;
 
+      /* العمق: كل عنصر بياخد مسافة z (data-z) */
+      s.querySelectorAll<HTMLElement>("[data-z]").forEach((el) => {
+        gsap.set(el, { z: Number(el.dataset.z) });
+      });
+
+      if (!reduce) {
+        s.querySelectorAll<HTMLElement>("[data-float]").forEach((el) => {
+          gsap.to(el, {
+            y: gsap.utils.random(8, 16) * (Math.random() < 0.5 ? -1 : 1),
+            rotation: gsap.utils.random(-1.4, 1.4),
+            duration: gsap.utils.random(2.6, 4.2),
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+          });
+        });
+        s.querySelectorAll<HTMLElement>("[data-cloud]").forEach((el) => {
+          gsap.to(el, {
+            x: gsap.utils.random(-36, 36),
+            duration: gsap.utils.random(7, 13),
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+          });
+        });
+      }
+
+      /* العنوان */
       gsap.fromTo(
         s.querySelectorAll("[data-intro='line']"),
         { yPercent: 110 },
         { yPercent: 0, duration: 0.9, stagger: 0.12, ease: "power3.out",
-          scrollTrigger: { trigger: s, start: "top 70%", once: true } }
+          scrollTrigger: { trigger: s, start: "top 75%", once: true } }
       );
       gsap.fromTo(
         s.querySelectorAll("[data-intro='fade']"),
         { y: 24, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", delay: 0.3,
-          scrollTrigger: { trigger: s, start: "top 70%", once: true } }
+          scrollTrigger: { trigger: s, start: "top 75%", once: true } }
+      );
+
+      /* دخول المشهد والنص قبل ما يتثبت */
+      gsap.fromTo(
+        tiltRef.current,
+        { y: 80, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1.3, ease: "power3.out",
+          scrollTrigger: { trigger: stage, start: "top 85%", once: true, onEnter: () => setEntered(true) } }
       );
       gsap.fromTo(
-        s.querySelectorAll("[data-card]"),
-        { y: 90, opacity: 0, rotate: 2 },
-        { y: 0, opacity: 1, rotate: 0, duration: 1, stagger: 0.14, ease: "power3.out",
-          scrollTrigger: { trigger: panel, start: "top 80%", once: true } }
+        s.querySelectorAll("[data-copy]"),
+        { x: -50, opacity: 0 },
+        { x: 0, opacity: 1, duration: 1, delay: 0.25, ease: "power3.out",
+          scrollTrigger: { trigger: stage, start: "top 85%", once: true } }
       );
+
+      /* ── ديسكتوب: pin + scrub ── */
+      mm.add("(min-width: 901px) and (prefers-reduced-motion: no-preference)", () => {
+        deskRef.current = true;
+        const cam = camRef.current;
+        const warm = warmRef.current;
+        const sun = sunRef.current;
+        if (!cam || !warm || !sun) return;
+
+        gsap.set(cam, { yPercent: -50, scale: 0.86, rotationY: -24, rotationX: 8 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: "none" },
+          scrollTrigger: {
+            trigger: stage,
+            start: "top top",
+            end: "+=300%",
+            pin: true,
+            scrub: 0.8,
+            anticipatePin: 1,
+            snap: { snapTo: [0, 1 / 3, 2 / 3, 1], duration: { min: 0.3, max: 0.9 }, delay: 0.08, ease: "power2.inOut" },
+            onUpdate: (self) => {
+              const n = Math.round(self.progress * 3) + 1;
+              if (n !== stepRef.current) {
+                dirRef.current = n > stepRef.current ? 1 : -1;
+                stepRef.current = n;
+                setStep(n);
+              }
+            },
+          },
+        });
+
+        /* الكاميرا: كل خطوة زاوية مختلفة للنافذة */
+        const E = "power1.inOut";
+        tl.to(cam, { scale: 1, rotationY: -8, rotationX: 3, x: -24, duration: 1, ease: E }, 0)
+          .to(cam, { scale: 0.94, rotationY: 12, rotationX: 4, x: 16, duration: 1, ease: E }, 1)
+          .to(cam, { scale: 1.04, rotationY: 0, rotationX: 0, x: -8, duration: 1, ease: E }, 2);
+
+        /* باراالاكس السحاب: كل طبقة بسرعة */
+        stage.querySelectorAll<HTMLElement>("[data-par]").forEach((el) => {
+          tl.to(el, { x: Number(el.dataset.par), duration: 3 }, 0);
+        });
+
+        /* الشروق: السما بتدفى والشمس بتطلع */
+        tl.to(warm, { opacity: 1, duration: 1.2 }, 1.8)
+          .fromTo(sun, { y: 70, opacity: 0 }, { y: -50, opacity: 1, duration: 1.4 }, 1.6);
+
+        /* سحابة كبيرة بتعدي الشاشة بين كل خطوتين (إحساس الطيران) */
+        stage.querySelectorAll<HTMLElement>("[data-wipe]").forEach((w, i) => {
+          const base = i + 0.1;
+          tl.fromTo(w, { x: "-75vw", y: "46vh" }, { x: "62vw", y: "-46vh", duration: 0.8 }, base)
+            .fromTo(w, { opacity: 0 }, { opacity: 0.92, duration: 0.4 }, base)
+            .to(w, { opacity: 0, duration: 0.4 }, base + 0.4);
+        });
+
+        stRef.current = tl.scrollTrigger ?? null;
+        return () => {
+          deskRef.current = false;
+          stRef.current = null;
+        };
+      });
+
+      mm.add("(max-width: 900px), (prefers-reduced-motion: reduce)", () => {
+        deskRef.current = false;
+      });
     }, sectionRef);
-    return () => ctx.revert();
+
+    return () => {
+      mm.revert();
+      ctx.revert();
+    };
   }, []);
 
-  /* ── فتح الفورم: دايرتين (لون الفئة ثم الغامق) ── */
+  /* ── ميل خفيف للمشهد مع الماوس ── */
   useEffect(() => {
-    if (!catId) return;
-    const wrap = wrapRef.current;
+    const tilt = tiltRef.current;
     const stage = stageRef.current;
-    const panel = panelRef.current;
-    if (!wrap || !stage || !panel) return;
-
-    const { x, y } = origin;
-    const r = Math.hypot(panel.offsetWidth, panel.offsetHeight) * 1.05;
-    const from = `circle(0px at ${x}px ${y}px)`;
-    const to = `circle(${r}px at ${x}px ${y}px)`;
-
-    const tl = gsap.timeline();
-    tl.fromTo(wrap,  { clipPath: from }, { clipPath: to, duration: 1.05, ease: "power3.inOut", clearProps: "clipPath" }, 0)
-      .fromTo(stage, { clipPath: from }, { clipPath: to, duration: 1.05, ease: "power3.inOut", clearProps: "clipPath", delay: 0 }, 0.16)
-      .fromTo(stage.querySelectorAll("[data-c]"), { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.7, stagger: 0.08, ease: "power3.out" }, 0.85);
-
-    return () => { tl.kill(); };
-  }, [catId, origin]);
-
-  /* Escape يقفل الفورم */
-  useEffect(() => {
-    if (!catId) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeForm(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catId]);
-
-  /* ── دخول محتوى كل خطوة ── */
-  useEffect(() => {
-    if (!catId) return;
-    const body = bodyRef.current;
-    if (!body) return;
-    const delay = enteredRef.current ? 0 : 0.8;
-    enteredRef.current = true;
-    const dir = dirRef.current;
-
-    const tl = gsap.timeline({ delay });
-    tl.fromTo(body.querySelectorAll("[data-s='line']"), { yPercent: 110 },
-        { yPercent: 0, duration: 0.8, ease: "power4.out" }, 0)
-      .fromTo(body.querySelectorAll("[data-s='fade']"), { x: 40 * dir, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.6, stagger: 0.07, ease: "power3.out" }, 0.1);
-
-    return () => { tl.kill(); };
-  }, [catId, bodyKey]);
-
-  /* ── المشهد: كل خطوة بتبني طبقة جديدة ── */
-  useEffect(() => {
-    const svg = sceneRef.current;
-    if (!svg || !catId) return;
-    const target = done ? 4 : step;
-    const base = sceneStartedRef.current ? 0 : 0.95;
-    sceneStartedRef.current = true;
-
-    svg.querySelectorAll<SVGGElement>("[data-layer]").forEach((g) => {
-      const n = Number(g.dataset.layer);
-      const want = n <= target;
-      if ((g.dataset.on === "1") === want) return;
-      g.dataset.on = want ? "1" : "0";
-      g.classList.toggle(styles.layerOn, want);
-
-      const d = g.querySelectorAll("[data-d]");
-      const f = g.querySelectorAll("[data-f]");
-      const p = g.querySelectorAll("[data-pop]");
-      gsap.killTweensOf([...Array.from(d), ...Array.from(f), ...Array.from(p)]);
-
-      if (want) {
-        gsap.to(d, { strokeDashoffset: 0, duration: 0.95, stagger: 0.08, delay: base, ease: "power2.inOut" });
-        gsap.to(f, { opacity: 1, duration: 0.7, stagger: 0.06, delay: base + 0.35 });
-        gsap.fromTo(p, { scale: 0, opacity: 0, transformOrigin: "50% 100%" },
-          { scale: 1, opacity: 1, duration: 0.9, stagger: 0.05, delay: base + 0.5, ease: "bounce.out" });
-      } else {
-        gsap.to(d, { strokeDashoffset: HIDE, duration: 0.35, stagger: { each: 0.02, from: "end" } });
-        gsap.to(f, { opacity: 0, duration: 0.3 });
-        gsap.to(p, { scale: 0, opacity: 0, duration: 0.3 });
-      }
-    });
-
-    /* الساعة: العقارب بتتحرك مع كل خطوة (10:10) */
-    if (catId === "watch") {
-      const hour = svg.querySelector("[data-hand='hour']");
-      const min = svg.querySelector("[data-hand='min']");
-      if (hour) gsap.to(hour, { rotation: target >= 1 ? -60 : 0, svgOrigin: "200 210", duration: 1.2, delay: base, ease: "elastic.out(1, 0.55)" });
-      if (min)  gsap.to(min,  { rotation: target >= 2 ? 60 : 0,  svgOrigin: "200 210", duration: 1.2, delay: base, ease: "elastic.out(1, 0.55)" });
-    }
-  }, [catId, step, done]);
-
-  /* ── النهاية: شرارات + نبضة ── */
-  useEffect(() => {
-    if (!done) return;
-    const svg = sceneRef.current;
-    if (!svg) return;
-    const sparks = svg.querySelectorAll<SVGCircleElement>("[data-spark] circle");
-    sparks.forEach((c, i) => {
-      const a = (i / sparks.length) * Math.PI * 2;
-      const dist = 130 + Math.random() * 70;
-      gsap.fromTo(c, { x: 0, y: 0, opacity: 1, scale: 1 },
-        { x: Math.cos(a) * dist, y: Math.sin(a) * dist, opacity: 0, scale: 0.2, duration: 1.5, delay: i * 0.025, ease: "power3.out" });
-    });
-    gsap.fromTo(svg, { scale: 1 }, { scale: 1.05, duration: 0.3, yoyo: true, repeat: 1, ease: "power2.out", transformOrigin: "50% 50%" });
-  }, [done]);
-
-  /* ── ميل خفيف للمشهد مع حركة الماوس ── */
-  useEffect(() => {
-    const wrap = tiltRef.current;
-    const col = sceneColRef.current;
-    if (!wrap || !col) return;
-    gsap.set(wrap, { transformPerspective: 900 });
-    const rx = gsap.quickTo(wrap, "rotationX", { duration: 0.6, ease: "power3.out" });
-    const ry = gsap.quickTo(wrap, "rotationY", { duration: 0.6, ease: "power3.out" });
+    if (!tilt || !stage) return;
+    const fine = window.matchMedia("(pointer: fine)").matches;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!fine || reduce) return;
+    const rx = gsap.quickTo(tilt, "rotationX", { duration: 0.8, ease: "power3.out" });
+    const ry = gsap.quickTo(tilt, "rotationY", { duration: 0.8, ease: "power3.out" });
     const move = (e: MouseEvent) => {
-      const r = wrap.getBoundingClientRect();
-      ry(((e.clientX - (r.left + r.width / 2)) / r.width) * 14);
-      rx((-(e.clientY - (r.top + r.height / 2)) / r.height) * 14);
+      const r = stage.getBoundingClientRect();
+      ry(((e.clientX - (r.left + r.width / 2)) / r.width) * 7);
+      rx((-(e.clientY - (r.top + r.height / 2)) / r.height) * 5);
     };
     const leave = () => { rx(0); ry(0); };
-    col.addEventListener("mousemove", move);
-    col.addEventListener("mouseleave", leave);
+    stage.addEventListener("mousemove", move);
+    stage.addEventListener("mouseleave", leave);
     return () => {
-      col.removeEventListener("mousemove", move);
-      col.removeEventListener("mouseleave", leave);
+      stage.removeEventListener("mousemove", move);
+      stage.removeEventListener("mouseleave", leave);
     };
+  }, []);
+
+  /* ── كل خطوة: الكلام بخط اليد والأسهم بترتسم ── */
+  useEffect(() => {
+    if (!entered) return;
+    const root = notesRef.current;
+    if (!root) return;
+    const notes = root.querySelectorAll("[data-note]");
+    const arrows = root.querySelectorAll("[data-arrow]");
+    const tl = gsap.timeline({ delay: 0.2 });
+    tl.fromTo(notes, { opacity: 0, y: 12, rotate: -3 },
+        { opacity: 1, y: 0, rotate: 0, duration: 0.6, stagger: 0.18, ease: "power3.out" }, 0)
+      .fromTo(arrows, { strokeDashoffset: 1 },
+        { strokeDashoffset: 0, duration: 0.8, stagger: 0.18, ease: "power2.inOut" }, 0.25);
+    return () => { tl.kill(); };
+  }, [bodyKey, entered]);
+
+  /* ── دخول محتوى الخطوة ── */
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+    const dir = dirRef.current;
+    const tl = gsap.timeline({ delay: 0.05 });
+    tl.fromTo(body.querySelectorAll("[data-s='line']"), { yPercent: 110 },
+        { yPercent: 0, duration: 0.8, ease: "power4.out" }, 0)
+      .fromTo(body.querySelectorAll("[data-s='fade']"), { y: 26 * dir, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6, stagger: 0.07, ease: "power3.out" }, 0.1);
+    return () => { tl.kill(); };
+  }, [bodyKey]);
+
+  /* ── تغيير العالم: النافذة بتلف لفة صغيرة ── */
+  useEffect(() => {
+    const win = winRef.current;
+    if (!win) return;
+    const t = gsap.fromTo(win,
+      { rotationY: -16, scale: 0.95, opacity: 0.4 },
+      { rotationY: 0, scale: 1, opacity: 1, duration: 0.9, ease: "power3.out", transformPerspective: 900 });
+    return () => { t.kill(); };
   }, [catId]);
+
+  /* ── النهاية: النافذة بتطلع + حلقة + شرارات + LIVE ── */
+  useEffect(() => {
+    const win = winRef.current;
+    const ring = ringRef.current;
+    const badge = badgeRef.current;
+    const sparks = sparksRef.current;
+    if (!win || !ring || !badge || !sparks) return;
+
+    if (done) {
+      const tl = gsap.timeline();
+      tl.to(win, { y: -28, scale: 1.04, duration: 1, ease: "elastic.out(1, 0.5)" }, 0)
+        .fromTo(ring, { scale: 0.96, opacity: 0.9 }, { scale: 1.4, opacity: 0, duration: 1.2, ease: "power2.out" }, 0)
+        .fromTo(badge, { scale: 0, rotate: -20 }, { scale: 1, rotate: 0, duration: 0.8, ease: "back.out(2.4)" }, 0.35);
+      const dots = Array.from(sparks.children);
+      dots.forEach((c, i) => {
+        const a = (i / dots.length) * Math.PI * 2;
+        const dist = 150 + Math.random() * 100;
+        tl.fromTo(c, { x: 0, y: 0, opacity: 1, scale: 1 },
+          { x: Math.cos(a) * dist, y: Math.sin(a) * dist, opacity: 0, scale: 0.2, duration: 1.5, ease: "power3.out" }, 0.05 + i * 0.02);
+      });
+      return () => { tl.kill(); };
+    }
+    gsap.to(win, { y: 0, scale: 1, duration: 0.6, ease: "power3.out" });
+    gsap.set(badge, { scale: 0 });
+    gsap.set(ring, { opacity: 0 });
+  }, [done]);
 
   /* ═══════════ الواجهة ═══════════ */
   const stepMeta = STEPS[step - 1];
   const progress = done ? 1 : (step - 1) / 3;
   const first = form.name.trim().split(" ")[0];
+  const slug = form.brand.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 16) || "yourbrand";
+  const planP = (form.budget ? 0.5 : 0) + (form.timeline ? 0.5 : 0);
+  const notes = done ? NOTES_DONE : NOTES[step - 1];
 
   const renderBody = () => {
-    if (!cat) return null;
-
     if (done) {
       return (
         <>
@@ -669,6 +629,24 @@ export default function Section5() {
 
         {step === 1 && (
           <>
+            <div data-s="fade" className={styles.field}>
+              <span className={styles.label}>Your world</span>
+              <div className={styles.chips} role="group" aria-label="Website category">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`${styles.chip} ${catId === c.id ? styles.chipOn : ""}`}
+                    aria-pressed={catId === c.id}
+                    onClick={() => pickCat(c.id)}
+                  >
+                    <span className={styles.worldDot} style={{ background: c.accent }} />
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <label data-s="fade" className={styles.field}>
               <span className={styles.label}>Brand name</span>
               <input
@@ -677,7 +655,6 @@ export default function Section5() {
                 onChange={(e) => set("brand", e.target.value)}
                 placeholder={cat.placeholder}
                 autoComplete="organization"
-                autoFocus
               />
             </label>
 
@@ -820,155 +797,222 @@ export default function Section5() {
             <span data-intro="line" className={styles.maskInner}>IN FOUR QUICK STEPS</span>
           </span>
         </h2>
-        <p data-intro="fade" className={styles.subtitle}>pick your world, watch it take shape</p>
+        <p data-intro="fade" className={styles.subtitle}>scroll, and watch your site take shape in the clouds</p>
       </div>
 
-      <div ref={panelRef} className={styles.panel}>
-        {/* ── اختيار الفئة ── */}
-        <div className={styles.pick}>
-          <div className={styles.pickHead}>
-            <p className={styles.pickKicker}>Step 1 · Choose your world</p>
-            <h3 className={styles.pickTitle}>What kind of website do you need?</h3>
+      {/* المشهد الكامل: بيتثبت وبيتحرك مع السكرول */}
+      <div
+        ref={stageRef}
+        className={styles.stage}
+        style={{ "--accent": cat.accent, "--tint": tint } as CSSProperties}
+      >
+        {/* السما: ألوان + شمس + سحاب بعيد (باراالاكس) */}
+        <div className={styles.sky} aria-hidden="true">
+          <div ref={warmRef} className={styles.warm} />
+          <div ref={sunRef} className={styles.sun} />
+          <div data-par="-70" className={styles.layer}>
+            <Cloud s={9} style={{ left: "6%", top: "12%", opacity: 0.55 }} />
+            <Cloud s={8} style={{ left: "46%", top: "7%", opacity: 0.5 }} />
+            <Cloud s={10} style={{ right: "4%", top: "18%", opacity: 0.55 }} />
           </div>
-
-          <div className={styles.cards}>
-            {CATEGORIES.map((c, i) => (
-              <button
-                key={c.id}
-                type="button"
-                data-card
-                className={styles.card}
-                style={{ "--accent": c.accent } as CSSProperties}
-                onMouseMove={cardGlow}
-                onClick={(e) => choose(c.id, e)}
-              >
-                <span className={styles.cardNum}>0{i + 1}</span>
-                <CardIcon id={c.id} />
-                <span className={styles.cardName}>{c.name}</span>
-                <span className={styles.cardBlurb}>{c.blurb}</span>
-                <span className={styles.tags}>
-                  {c.tags.map((t) => (
-                    <span key={t} className={styles.tag}>{t}</span>
-                  ))}
-                </span>
-                <span className={styles.cardCta}>Start your brief <span aria-hidden="true">→</span></span>
-              </button>
-            ))}
+          <div data-par="-180" className={styles.layer}>
+            <Cloud s={14} style={{ left: "-4%", top: "52%", opacity: 0.85 }} />
+            <Cloud s={12} style={{ left: "34%", top: "70%", opacity: 0.8 }} />
+            <Cloud s={13} style={{ right: "18%", top: "62%", opacity: 0.85 }} />
+            <Cloud s={11} style={{ right: "-3%", top: "30%", opacity: 0.7 }} />
           </div>
         </div>
 
-        {/* ── الفورم ── */}
-        {cat && (
-          <div
-            ref={wrapRef}
-            className={styles.formWrap}
-            style={{
-              "--accent": cat.accent,
-              clipPath: `circle(0px at ${origin.x}px ${origin.y}px)`,
-            } as CSSProperties}
-          >
-            <div
-              ref={stageRef}
-              className={styles.formStage}
-              style={{ clipPath: `circle(0px at ${origin.x}px ${origin.y}px)` }}
-              role="group"
-              aria-label={`${cat.name} website brief`}
-            >
-              {/* المشهد */}
-              <div ref={sceneColRef} className={styles.sceneCol}>
-                <div ref={tiltRef} data-c className={styles.sceneWrap}>
-                  <svg
-                    ref={sceneRef}
-                    key={cat.id}
-                    viewBox="0 0 400 420"
-                    className={styles.scene}
-                    style={{ "--tint": cat.styles[form.styleIdx].tint } as CSSProperties}
-                    role="img"
-                    aria-label={`${cat.name} illustration that builds as you fill the form`}
-                  >
-                    {cat.id === "interior" && <InteriorScene />}
-                    {cat.id === "estate" && <EstateScene />}
-                    {cat.id === "watch" && <WatchScene brand={form.brand} />}
-                    <g className={styles.sparks} data-spark>
-                      {Array.from({ length: 16 }, (_, i) => (
-                        <circle key={i} cx="200" cy="210" r="3" />
-                      ))}
-                    </g>
-                  </svg>
+        {/* المشهد 3D */}
+        <div className={styles.scene}>
+          <div ref={tiltRef} className={styles.tilt}>
+            <div ref={camRef} className={styles.cam}>
+              <Cloud s={13} depth={-70} style={{ left: "-8%", top: "58%" }} />
+              <Cloud s={10} depth={-70} style={{ right: "-6%", top: "6%" }} />
+
+              {/* النافذة الزجاجية الحية */}
+              <div className={styles.winFloat} data-float data-z="0">
+                <div
+                  ref={winRef}
+                  className={styles.win}
+                  data-lvl={lvl}
+                  role="img"
+                  aria-label={`Live preview of your ${cat.name.toLowerCase()} website`}
+                >
+                  <div className={styles.bar}>
+                    <span className={styles.dotR} />
+                    <span className={styles.dotY} />
+                    <span className={styles.dotC} />
+                    <span className={styles.url}>{slug}.com</span>
+                  </div>
+
+                  <div className={styles.mNav}>
+                    <span className={styles.mBrand}>
+                      <span className={styles.mLogo} />
+                      <span className={styles.mBrandName}>{form.brand.trim().slice(0, 14) || "Brand"}</span>
+                    </span>
+                    <span className={styles.mLinks}><i /><i /><i /></span>
+                  </div>
+
+                  <div className={styles.mHero}>
+                    <div className={styles.mCopy}>
+                      <p className={styles.mTag}>{cat.tagline}</p>
+                      <h4 className={`${styles.mTitle} ${form.brand.trim() ? "" : styles.ghostText}`}>
+                        {form.brand.trim() || "Your brand"}
+                      </h4>
+                      <span className={styles.skel} />
+                      <span className={`${styles.skel} ${styles.skelShort}`} />
+                      <span className={styles.mCta}>{cat.cta}</span>
+                    </div>
+                    <div className={styles.art}>
+                      <Art id={cat.id} />
+                    </div>
+                  </div>
+
+                  <div className={styles.mGrid}>
+                    {Array.from({ length: 6 }, (_, i) => {
+                      const ft = form.features[i];
+                      return ft ? <Tile key={ft} label={ft} /> : <div key={`s${i}`} className={styles.slot} />;
+                    })}
+                  </div>
+
+                  <div className={styles.plan}>
+                    <div className={styles.planTrack}>
+                      <span className={styles.planFill} style={{ transform: `scaleX(${planP})` }} />
+                    </div>
+                    <div className={styles.planText}>
+                      <span>{form.budget || "Budget"}</span>
+                      <span>{form.timeline || "Timeline"}</span>
+                    </div>
+                  </div>
                 </div>
-                <p key={bodyKey} data-c className={styles.caption}>
-                  <span className={styles.capDot} />
-                  {done ? "Your brief is ready" : `Now adding · ${cat.build[step - 1]}`}
-                </p>
+
+                <span ref={ringRef} className={styles.ring} />
+                <div ref={sparksRef} className={styles.sparks} aria-hidden="true">
+                  {Array.from({ length: 16 }, (_, i) => <span key={i} />)}
+                </div>
+                <span ref={badgeRef} className={styles.live}>LIVE</span>
               </div>
 
-              {/* الخطوات */}
-              <div className={styles.formCol}>
-                <div data-c className={styles.topRow}>
-                  <button type="button" className={styles.back} onClick={closeForm}>
-                    ← All categories
-                  </button>
-                  <span className={styles.catName}>{cat.name}</span>
-                </div>
+              {/* كروت زجاج صغيرة طايرة (زي الهيرو) */}
+              <div className={`${styles.glass} ${styles.gPhoto}`} data-float data-z="70" aria-hidden="true">
+                <span className={styles.gPhotoImg} />
+              </div>
+              <div className={`${styles.glass} ${styles.gCode}`} data-float data-z="95" aria-hidden="true">
+                <span>{"</>"}</span>
+              </div>
+              <div className={`${styles.glass} ${styles.gText}`} data-float data-z="60" aria-hidden="true">
+                <i /><i /><i />
+              </div>
 
-                <div data-c className={styles.stepper}>
-                  <span className={styles.track}>
-                    <span className={styles.trackFill} style={{ transform: `scaleX(${progress})` }} />
-                  </span>
-                  {STEPS.map((s, i) => {
-                    const n = i + 1;
-                    const isDone = done || n < step;
-                    return (
-                      <div
-                        key={s.label}
-                        className={`${styles.stepItem} ${isDone ? styles.stepDone : ""} ${!done && n === step ? styles.stepCur : ""}`}
-                      >
-                        <span className={styles.stepDot}>{isDone ? "✓" : n}</span>
-                        <span className={styles.stepLabel}>{s.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className={styles.rock} aria-hidden="true">
+                <Rock />
+              </div>
 
-                <div
-                  key={bodyKey}
-                  ref={bodyRef}
-                  className={styles.body}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
-                      e.preventDefault();
-                      next();
-                    }
-                  }}
-                >
-                  {renderBody()}
-                </div>
-
-                {done ? (
-                  <div data-c className={styles.actions}>
-                    <button type="button" className={styles.primary} onClick={closeForm}>
-                      Start another brief
-                    </button>
+              <div key={bodyKey} ref={notesRef} className={styles.notes} aria-hidden="true">
+                {notes.map((n) => (
+                  <div
+                    key={n.text}
+                    data-note
+                    className={`${styles.note} ${n.arrow === "dl" ? styles.noteL : ""}`}
+                    style={{ left: n.x, top: n.y }}
+                  >
+                    <span className={styles.noteText}>{n.text}</span>
+                    <ArrowSvg dir={n.arrow} />
                   </div>
-                ) : (
-                  <>
-                    {status === "error" && (
-                      <p className={styles.error}>We could not send your brief. Check your connection and try again.</p>
-                    )}
-                    <div data-c className={styles.actions}>
-                      <button type="button" className={styles.ghost} onClick={() => go(-1)} disabled={step === 1}>
-                        ← Back
-                      </button>
-                      <button type="button" className={styles.primary} onClick={next} disabled={!valid || status === "sending"}>
-                        {step < 4 ? "Next →" : status === "sending" ? "Sending…" : "Send brief"}
-                      </button>
-                    </div>
-                  </>
-                )}
+                ))}
               </div>
             </div>
           </div>
-        )}
+        </div>
+
+        {/* سحاب أمامي: أسرع طبقة */}
+        <div data-par="-340" className={`${styles.layer} ${styles.near}`} aria-hidden="true">
+          <Cloud s={30} style={{ left: "-8%", bottom: "-120px" }} />
+          <Cloud s={34} style={{ left: "38%", bottom: "-150px" }} />
+          <Cloud s={28} style={{ right: "-6%", bottom: "-110px" }} />
+        </div>
+
+        {/* سحابات بتعدي الشاشة بين الخطوات */}
+        <Cloud s={90} wipe still />
+        <Cloud s={90} wipe still />
+        <Cloud s={90} wipe still />
+
+        {/* ── النص والفورم: مباشرة على السما، بدون كارت ── */}
+        <div data-copy className={styles.copy}>
+          <div className={styles.topRow}>
+            <span className={styles.kicker}>{done ? "Complete" : `Step 0${step} / 04`}</span>
+            <span className={styles.catName}>{cat.name}</span>
+          </div>
+
+          <div className={styles.stepper}>
+            <span className={styles.track}>
+              <span className={styles.trackFill} style={{ transform: `scaleX(${progress})` }} />
+            </span>
+            {STEPS.map((s, i) => {
+              const n = i + 1;
+              const isDone = done || n < step;
+              return (
+                <button
+                  key={s.label}
+                  type="button"
+                  className={`${styles.stepItem} ${isDone ? styles.stepDone : ""} ${!done && n === step ? styles.stepCur : ""}`}
+                  onClick={() => goTo(n)}
+                  aria-label={`Go to step ${n}: ${s.label}`}
+                >
+                  <span className={styles.stepDot}>{isDone ? "✓" : n}</span>
+                  <span className={styles.stepLabel}>{s.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div
+            key={bodyKey}
+            ref={bodyRef}
+            className={styles.body}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
+                e.preventDefault();
+                next();
+              }
+            }}
+          >
+            {renderBody()}
+          </div>
+
+          {done ? (
+            <div className={styles.actions}>
+              <button type="button" className={styles.primary} onClick={restart}>
+                Start another brief
+              </button>
+            </div>
+          ) : (
+            <>
+              {status === "error" && (
+                <p className={styles.error}>We could not send your brief. Check your connection and try again.</p>
+              )}
+              <div className={styles.actions}>
+                <button type="button" className={styles.ghost} onClick={() => go(-1)} disabled={step === 1}>
+                  ← Back
+                </button>
+                <button type="button" className={styles.primary} onClick={next} disabled={!valid || status === "sending"}>
+                  {step < 4 ? "Next →" : status === "sending" ? "Sending…" : "Send brief"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        <p key={`c${bodyKey}`} className={styles.caption}>
+          <span className={styles.capDot} />
+          {done ? "Live in the clouds" : CAPTIONS[step - 1]}
+        </p>
+
+        <p className={`${styles.scrollHint} ${step > 1 || done ? styles.scrollHintOff : ""}`} aria-hidden="true">
+          <span>Scroll to build</span>
+          <i />
+        </p>
       </div>
     </section>
   );

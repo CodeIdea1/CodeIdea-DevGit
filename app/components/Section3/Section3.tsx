@@ -8,10 +8,10 @@ import styles from "./Section3.module.css";
 
 const IMAGES = [
   { id: "rt", src: "/web-3.png", cls: "imgRightTop",    dir: "right"        },
-  { id: "rb", src: "/web-2.png", cls: "imgRightBottom", dir: "right_bottom" },
+  { id: "rb", src: "/cof.png", cls: "imgRightBottom", dir: "right_bottom" },
   { id: "lt", src: "/web-3.png", cls: "imgLeftTop",     dir: "left"         },
-  { id: "lb", src: "/web-4.png", cls: "imgLeftBottom",  dir: "left_bottom"  },
-  { id: "tp", src: "/web-4.png", cls: "imgTop",         dir: "top"          },
+  { id: "lb", src: "/gg.png", cls: "imgLeftBottom",  dir: "left_bottom"  },
+  { id: "tp", src: "/gg.png", cls: "imgTop",         dir: "top"          },
   { id: "bt", src: "/qq.webp",  cls: "imgBottom",      dir: "bottom"       },
 ] as const;
 
@@ -22,6 +22,15 @@ const OFFSETS: Record<string, { x: number; y: number }> = {
   left_bottom:  { x: -160, y: 160  },
   top:          { x: 0,    y: -180 },
   bottom:       { x: 0,    y: 35   },
+};
+
+/* حالة البداية لأنيميشن الـ clip عند دخول الصور الجانبية (من جهة دخولها) */
+const SIDE_CLIP_FROM: Record<string, string> = {
+  right:        "inset(0% 0% 0% 100%)",
+  right_bottom: "inset(0% 0% 0% 100%)",
+  left:         "inset(0% 100% 0% 0%)",
+  left_bottom:  "inset(0% 100% 0% 0%)",
+  top:          "inset(0% 0% 100% 0%)",
 };
 
 /* ── المشاريع ──
@@ -87,8 +96,39 @@ const STATS = [
   { value: "99%",  label: "Client satisfaction" },
 ];
 
-/* حجم الدايرة اللي بتكشف الصورة مع الماوس (كان 0.26) */
+/* حجم الدايرة اللي بتكشف الصورة مع الماوس */
 const REVEAL_RADIUS_RATIO = 0.36;
+
+/* ── ضبط حركة الكونتينر مع السكرول ──
+   IMG_WIDTH_RATIO             : عرض صورة المشروع بالنسبة لعرض الكونتينر (36%)
+   IMG_TOP_START / IMG_TOP_END : مكان مركز الصورة جوه الكونتينر (بالنسبة لارتفاعه)
+   الصورة بتتحرك وتكبر بـ transform فقط (GPU) بدل width/top، فمفيش إعادة حساب
+   تخطيط ولا إعادة رسم للصورة مع كل frame (ده كان سبب التهنيج). */
+const IMG_WIDTH_RATIO = 0.36;
+const IMG_TOP_START   = 0.36;
+const IMG_TOP_END     = 0.66;
+
+/* النصوص تبدأ بس بعد ما الكونتينر يخلص تكبيره تمامًا، وتتأخر قليلًا بعدها */
+const TEXT_SHOW_AT   = 0.999;   // تقدّم الكونتينر (0 → 1) اللي عنده النصوص تدخل
+const TEXT_HIDE_AT   = 0.98;    // لو رجعت تحت القيمة دي النصوص تنزل
+const TEXT_DELAY     = 0.4;
+const TEXT_DURATION  = 1.3;
+const TEXT_EASE      = "power4.out";
+
+/* انسيابية نزول وتكبير الكونتينر: كل ما القيمة أقل = أسرع وأقرب للسكرول */
+const CONTAINER_SCRUB = 0.25;
+
+/* مدة وإيزي أنيميشن الـ clip عند تبديل الصور بالسكرول */
+const CLIP_DURATION = 2.4;
+const CLIP_EASE     = "power2.inOut";
+
+/* ظهور/اختفاء صورة المشروع عند دخول/خروج منطقة الـ pin (بالـ clip) */
+const SCROLL_REVEAL_DURATION = 1.1;
+
+/* ── التثبيت (Pin) بعد ما الكونتينر يكبر ──
+   PIN_VH_PER_PROJECT : مسافة السكرول (بوحدة ارتفاع الشاشة) لكل مشروع
+                        المسافة الكلية = عدد المشاريع × القيمة دي × ارتفاع الشاشة */
+const PIN_VH_PER_PROJECT = 0.8;
 
 const hostOf = (url: string) => {
   try { return new URL(url).host; } catch { return url; }
@@ -98,6 +138,7 @@ export default function Section3() {
   const sectionRef    = useRef<HTMLElement>(null);
   const contentRef    = useRef<HTMLDivElement>(null);
   const growWrapRef   = useRef<HTMLDivElement>(null);
+  const pinLayerRef   = useRef<HTMLDivElement>(null);
   const coffeeWrapRef = useRef<HTMLDivElement>(null);
   const overlayRef    = useRef<HTMLDivElement>(null);
   const badgeRef      = useRef<HTMLDivElement>(null);
@@ -250,188 +291,254 @@ export default function Section3() {
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
+    // ما نعملش refresh لما شريط العنوان في الموبايل يطلع وينزل (بيسبب قفزات)
+    ScrollTrigger.config({ ignoreMobileResize: true });
+
     const ctx = gsap.context(() => {
-      const section     = sectionRef.current;
-      const growWrap    = growWrapRef.current;
-      const coffeeWrap  = coffeeWrapRef.current;
-      const overlay     = overlayRef.current;
-      const badge       = badgeRef.current;
-      const badgeName   = badgeNameRef.current;
+      const section    = sectionRef.current;
+      const growWrap   = growWrapRef.current;
+      const coffeeWrap = coffeeWrapRef.current;
+      const overlay    = overlayRef.current;
+      const badge      = badgeRef.current;
+      const badgeName  = badgeNameRef.current;
+      const pinLayer   = pinLayerRef.current;
       if (!section || !growWrap) return;
 
-      gsap.set(growWrap, { xPercent: -50, transformOrigin: "50% 50%" });
-      /* مكان الصور جوه الكونتينر: تبدأ فوق وتنزل مع نزول/تكبير الكونتينر */
-      const IMG_TOP_START = "36%";
-      const IMG_TOP_END   = "66%";
-      gsap.set(growWrap, { "--img-top": IMG_TOP_START });
+      /* بتتعمل جوه بلوك الهفر، وبيناديها الـ pin عشان يبدّل الصورة مع السكرول */
+      let setScrollMode: ((on: boolean, idx: number) => void) | null = null;
 
-      /* ── باقي الصور تدخل من الجوانب ── */
+      /* ════════════════════════════════════════════
+         1) باقي الصور تدخل من الجوانب
+         ════════════════════════════════════════════ */
       section.querySelectorAll<HTMLElement>(`.${styles.imgWrap}`).forEach((el) => {
         if (el === growWrap) return;
         const dir  = el.dataset.dir ?? "right";
         const from = OFFSETS[dir] ?? OFFSETS.right;
         gsap.fromTo(
           el,
-          { x: from.x, y: from.y },
+          { x: from.x, y: from.y, clipPath: SIDE_CLIP_FROM[dir] ?? SIDE_CLIP_FROM.right },
           {
-            x: 0, y: 0,
+            x: 0,
+            y: 0,
+            clipPath: "inset(0% 0% 0% 0%)",
             ease: "power2.out",
             scrollTrigger: {
               trigger: section,
               start: "top 100%",
-              end:   "bottom 60%",
+              end: "bottom 60%",
               scrub: 1,
             },
           }
         );
       });
 
-      /* ── النص يظهر ── */
+      /* ════════════════════════════════════════════
+         2) العنوان يظهر
+         ════════════════════════════════════════════ */
       gsap.fromTo(
         contentRef.current,
         { y: 60, opacity: 0 },
         {
-          y: 0, opacity: 1,
+          y: 0,
+          opacity: 1,
           ease: "power2.out",
           scrollTrigger: {
             trigger: section,
             start: "top 78%",
-            end:   "top 40%",
+            end: "top 40%",
             scrub: 1,
           },
         }
       );
 
-      /* نقطة بداية الـ pin والتكبير: كل ما الرقم أكبر بدأ أبكر
-         (كان 0.85) */
-      const PIN_AT = 0.97;
+      /* ════════════════════════════════════════════
+         3) الكونتينر: ينزل مع السكرول ويكبر ليصبح السيكشن الرابع
 
-      /* ── الكونتينر كله يكبر مع السكرول لتغطي Section4
-            + محتوى الأوفرلاي (جوه الكونتينر) يظهر تدريجيًا مع نفس الـ scrub ── */
+         - الكونتينر مثبّت بالـ CSS أسفل السيكشن (bottom + margin auto)
+         - بنحرّك 3 حاجات بس: width / height / y
+           width  → عرض السيكشن الرابع
+           height → ارتفاع السيكشن الرابع
+           y      → ينزل لحد ما حافته السفلية تطابق حافة السيكشن الرابع
+         - في نهاية الحركة مقاسه ومكانه = السيكشن الرابع بالظبط
+         - القيم بتتحسب من العناصر نفسها وبتتعاد عند تغيير حجم الشاشة
+         ════════════════════════════════════════════ */
       const s4 = document.getElementById("section4");
 
       if (s4) {
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const W  = growWrap.offsetWidth;
-        const H  = growWrap.offsetHeight;
+        /* ── قياسات الكونتينر (الحجم الأصلي من الـ CSS + حجم السيكشن الرابع) ──
+           بتتعاد مع كل refresh (تغيير حجم الشاشة)، ومن غير ما نتأثر بأي inline style
+           حطّه GSAP أثناء الحركة. */
+        const imgEls = Array.from(growWrap.querySelectorAll<HTMLElement>(`.${styles.img}`));
+        const dims = { w0: 1, h0: 1, w1: 1, h1: 1 };
 
-        const scaleW     = vw / W;
-        const scaleH     = (s4.offsetHeight * 1.1) / H;
-        const coverScale = Math.max(scaleW, scaleH);
+        const measure = () => {
+          const { width, height } = growWrap.style;
+          growWrap.style.width  = "";
+          growWrap.style.height = "";
+          dims.w0 = growWrap.offsetWidth  || 1;
+          dims.h0 = growWrap.offsetHeight || 1;
+          growWrap.style.width  = width;
+          growWrap.style.height = height;
+          dims.w1 = s4.offsetWidth  || 1;
+          dims.h1 = s4.offsetHeight || 1;
+          // مقاس الصورة ثابت = مقاسها النهائي، والتصغير بيتم بالـ scale فقط
+          growWrap.style.setProperty("--img-w", `${dims.w1 * IMG_WIDTH_RATIO}px`);
+        };
 
-        /* بدل ما نحرّك y على العنصر اللي عليه الـ pin (ScrollTrigger بيكتب y بنفسه
-           بعد نهاية الـ pin، وده كان بيعمل تعارض بعد إضافة Section5)،
-           بنحرّك نقطة أصل الـ scale لتحت: نفس النتيجة بالظبط من غير y */
-        const KEEP_DROP = 0.35;
-        const ORIGIN_Y  = 50 + ((1 - KEEP_DROP) / 2) * 100; // 82.5%
-        gsap.set(growWrap, { xPercent: -50, transformOrigin: `50% ${ORIGIN_Y}%` });
+        /* الصور (الأساسية + صور المشاريع) بتتحرك وتكبر بـ transform فقط:
+           - scale  = عرض الكونتينر الحالي ÷ عرضه النهائي
+           - y      = المسافة بين مركز الكونتينر ومركز الصورة المطلوب */
+        const applyImages = (p: number) => {
+          const w = dims.w0 + (dims.w1 - dims.w0) * p;
+          const h = dims.h0 + (dims.h1 - dims.h0) * p;
+          const scale = w / dims.w1;
+          const y = (IMG_TOP_START + (IMG_TOP_END - IMG_TOP_START) * p - 0.5) * h;
+          const t = `translate3d(0, ${y}px, 0) scale(${scale})`;
+          for (let i = 0; i < imgEls.length; i++) imgEls[i].style.transform = t;
+        };
 
-        /* ── تثبيت الأوفرلاي جوه الكونتينر ──
-           الأوفرلاي بحجم الشاشة ومصغّر بمقدار 1/coverScale،
-           فمع تكبير الكونتينر يكبر معاه، وفي النهاية بالظبط يبقى على حجم الشاشة.
-           (lx, ly) = مكانه جوه الكونتينر عشان في نهاية الـ scale يتطابق مع الـ viewport.
-           الكونتينر بيتثبّت (pin) وقتها وحرفه السفلي على PIN_AT من ارتفاع الشاشة. */
+        /* ── نصوص الأوفرلاي ──
+           كل سطر جوه ماسك (overflow hidden) ويطلع من تحت لفوق بـ translate فقط.
+           الأوفرلاي بيفضل ظاهر طول الوقت (الماسكات هي اللي مخفية السطور)، فالطبقات
+           بتتجهّز مسبقًا ومفيش تهنيج لحظة الظهور. الأنيميشن زمني (مش مربوط بالسكرول). */
+        let setText: (show: boolean) => void = () => {};
+
         if (overlay) {
-          const Ox = W / 2;
-          const Oy = (H * ORIGIN_Y) / 100;
-          const rect0Left = (vw - W) / 2;
-          const rect0Top  = vh * PIN_AT - H;
-          const lx = Ox - (rect0Left + Ox) / coverScale;
-          const ly = Oy - (rect0Top  + Oy) / coverScale;
+          const lines = overlay.querySelectorAll<HTMLElement>(
+            '[data-anim="title-line"], [data-anim="desc-line"], [data-anim="cta"], [data-anim="stat-text"]'
+          );
+          const rules = overlay.querySelectorAll<HTMLElement>(
+            '[data-anim="line"], [data-anim="stat-line"]'
+          );
 
-          gsap.set(overlay, {
-            autoAlpha: 1,
-            x: lx,
-            y: ly,
-            scale: 1 / coverScale,
-            transformOrigin: "0 0",
-          });
+          gsap.set(lines, { yPercent: 110 });
+          gsap.set(rules, { scaleX: 0 });
+          overlay.style.visibility = "visible";
+
+          // كل النصوص بنفس التوقيت بالظبط: من غير stagger
+          const textTl = gsap
+            .timeline({ paused: true })
+            .to(lines, { yPercent: 0, duration: TEXT_DURATION, ease: TEXT_EASE }, TEXT_DELAY)
+            .to(rules, { scaleX: 1, duration: TEXT_DURATION, ease: TEXT_EASE }, TEXT_DELAY);
+
+          let textShown = false;
+          setText = (show: boolean) => {
+            if (show === textShown) return;
+            textShown = show;
+            if (show) textTl.timeScale(1).play();
+            else      textTl.timeScale(2.5).reverse();
+          };
         }
 
-        const tl = gsap.timeline({
+        measure();
+        applyImages(0);
+
+        let tl: gsap.core.Timeline | null = null;
+        const progressNow = () => (tl ? tl.progress() : 0);
+
+        tl = gsap.timeline({
           defaults: { ease: "none" },
           scrollTrigger: {
-            trigger:    growWrap,
-            start:      `bottom ${PIN_AT * 100}%`,
+            trigger: section,
+            start: "top top",
             endTrigger: s4,
-            end:        "bottom bottom",
-            pin:        true,
-            pinSpacing: false,
-            scrub:      0.3,
+            end: "top top",
+            scrub: CONTAINER_SCRUB,
+            invalidateOnRefresh: true,
+            onRefreshInit: measure,
+            onRefresh: () => applyImages(progressNow()),
+          },
+          onUpdate: () => {
+            const p = progressNow();
+            applyImages(p);
+            // النصوص مربوطة بتقدّم الكونتينر الفعلي (بعد الـ scrub) مش بالسكرول الخام
+            if (p >= TEXT_SHOW_AT) setText(true);
+            else if (p < TEXT_HIDE_AT) setText(false);
           },
         });
 
-        // تكبير الكونتينر (المدة = 1 → الـ timeline كله من 0 لـ 1)
+        // الكونتينر نفسه: width / height / y فقط
         tl.to(
           growWrap,
           {
-            scale: coverScale,
-            xPercent: -50,
-            "--img-top": IMG_TOP_END,
+            width: () => s4.offsetWidth,
+            height: () => s4.offsetHeight,
+            y: () => {
+              const secTop    = section.getBoundingClientRect().top;
+              const s4Bottom  = s4.getBoundingClientRect().bottom - secTop;
+              const wrapBottom = growWrap.offsetTop + growWrap.offsetHeight;
+              return s4Bottom - wrapBottom;
+            },
+            duration: 1,
           },
           0
         );
-
-        // محتوى الأوفرلاي: يظهر بالتدريج مع نفس حركة الكونتينر
-        if (overlay) {
-          const q = (sel: string) => overlay.querySelectorAll<HTMLElement>(sel);
-
-          tl.fromTo(
-            q("[data-anim='title-line']"),
-            { yPercent: 110 },
-            { yPercent: 0, duration: 0.3, stagger: 0.07, ease: "power2.out" },
-            0.2
-          )
-            .fromTo(
-              q("[data-anim='desc-line']"),
-              { y: 24, opacity: 0 },
-              { y: 0, opacity: 1, duration: 0.25, stagger: 0.06, ease: "power2.out" },
-              0.3
-            )
-            .fromTo(
-              q("[data-anim='cta']"),
-              { y: 24, opacity: 0, scale: 0.92 },
-              { y: 0, opacity: 1, scale: 1, duration: 0.25, ease: "power2.out" },
-              0.5
-            )
-            .fromTo(
-              q("[data-anim='line']"),
-              { scaleX: 0 },
-              { scaleX: 1, duration: 0.3, ease: "power2.inOut" },
-              0.6
-            )
-            .fromTo(
-              q("[data-anim='stat']"),
-              { x: 60, opacity: 0 },
-              { x: 0, opacity: 1, duration: 0.3, stagger: 0.08, ease: "power2.out" },
-              0.3
-            )
-            .fromTo(
-              q("[data-anim='stat-line']"),
-              { scaleX: 0 },
-              { scaleX: 1, duration: 0.25, stagger: 0.08, ease: "power2.inOut" },
-              0.4
-            );
-        }
       }
 
-      /* ── Hover Reveal + بادج + تبديل المشاريع + فتح العرض عند الضغط ── */
+      /* ════════════════════════════════════════════
+         4) Hover Reveal + بادج + فتح العرض عند الضغط
+            (تبديل المشاريع بقى بالسكرول داخل الـ pin — الخطوة 5)
+         ════════════════════════════════════════════ */
       let cleanupHover: (() => void) | undefined;
 
       if (coffeeWrap) {
-        const projectImgs = Array.from(
-          coffeeWrap.querySelectorAll<HTMLElement>("[data-project]")
-        );
-        const coffeeImg = projectImgs[0] ?? null;
+        /* كل مشروع = نافذة (win) فيها طبقة معاكسة (counter) فيها الصورة.
+           التبديل بالـ clip بيتم بتحريك النافذة والطبقة المعاكسة بعكس بعض (transform فقط)،
+           فالصورة تفضل ثابتة والنافذة بتنكشف حواليها = clip كامل على الـ GPU من غير repaint. */
+        const wins     = Array.from(coffeeWrap.querySelectorAll<HTMLElement>("[data-win]"));
+        const counters = Array.from(coffeeWrap.querySelectorAll<HTMLElement>("[data-counter]"));
+        const coffeeImg = coffeeWrap.querySelector<HTMLElement>("img");
 
-        /* المشروع الحالي: بيتبدل لما الماوس يبعد عن الصورة */
+        /* المشروع الحالي: بيتبدل مع السكرول جوه الـ pin */
         let projectIndex = 0;
+        /* true = إحنا جوه/بعد الـ pin: الصورة ظاهرة كاملة وبتتبدل بالسكرول */
+        let scrollMode = false;
+        /* true = الصورة في نص أنيميشن الخروج (clip) بعد الرجوع من الـ pin */
+        let exiting = false;
+        const FULL_CLIP = "inset(0% 0% 0% 0%)";
 
-        const applyProjectImage = (i: number) => {
-          projectImgs.forEach((el, k) => {
-            el.classList.toggle(styles.imgActive, k === i);
+        let clipTl: gsap.core.Timeline | null = null;
+
+        /* يوقف أي أنيميشن شغال ويرجع كل النوافذ لحالتها الطبيعية، ويظهر المطلوبة بس */
+        const resetWins = (visible: number[]) => {
+          clipTl?.kill();
+          clipTl = null;
+          wins.forEach((w, k) => {
+            gsap.set([w, counters[k]], { clearProps: "transform" });
+            w.style.zIndex = "";
+            w.style.visibility = visible.includes(k) ? "visible" : "hidden";
           });
+        };
+
+        /* تبديل فوري (من غير أنيميشن): للهفر والريسيت */
+        const applyProjectImage = (i: number) => resetWins([i]);
+
+        /* تبديل بأنيميشن clip: الصورة الجديدة تنكشف فوق القديمة
+           (للأسفل: من تحت لفوق، وللأعلى: من فوق لتحت) */
+        const clipToProject = (from: number, to: number) => {
+          if (from === to || !wins[from] || !wins[to]) return applyProjectImage(to);
+
+          const dir = to > from ? 1 : -1;
+          resetWins([from, to]);
+
+          const prevWin = wins[from];
+          const nextWin = wins[to];
+          prevWin.style.zIndex = "1";
+          nextWin.style.zIndex = "2";
+
+          clipTl = gsap
+            .timeline({
+              defaults: { duration: CLIP_DURATION, ease: CLIP_EASE },
+              onComplete: () => {
+                prevWin.style.visibility = "hidden";
+                prevWin.style.zIndex = "";
+                nextWin.style.zIndex = "";
+                gsap.set([nextWin, counters[to]], { clearProps: "transform" });
+                clipTl = null;
+              },
+            })
+            .fromTo(nextWin,        { yPercent:  100 * dir }, { yPercent: 0 }, 0)
+            .fromTo(counters[to],   { yPercent: -100 * dir }, { yPercent: 0 }, 0);
         };
 
         const applyBadgeText = (i: number) => {
@@ -445,17 +552,15 @@ export default function Section3() {
         // حجم الدايرة اللي بتكشف الصورة
         const getRevealRadius = () => growWrap.offsetHeight * REVEAL_RADIUS_RATIO;
 
+        // إحداثيات الماوس جوه الكونتينر
         const toLocal = (e: MouseEvent) => {
-          const rect   = growWrap.getBoundingClientRect();
-          const scaleX = growWrap.offsetWidth  / rect.width;
-          const scaleY = growWrap.offsetHeight / rect.height;
-          return {
-            x: (e.clientX - rect.left) * scaleX,
-            y: (e.clientY - rect.top)  * scaleY,
-          };
+          const rect = growWrap.getBoundingClientRect();
+          return { x: e.clientX - rect.left, y: e.clientY - rect.top };
         };
 
         const loop = () => {
+          if (scrollMode || exiting) { raf = 0; return; }
+
           curX += (targetX - curX) * 0.25;
           curY += (targetY - curY) * 0.25;
           curR += (targetR - curR) * 0.15;
@@ -471,7 +576,85 @@ export default function Section3() {
 
           raf = settled ? 0 : requestAnimationFrame(loop);
         };
-        const startLoop = () => { if (!raf) raf = requestAnimationFrame(loop); };
+        const startLoop = () => {
+          if (scrollMode || exiting) return;
+          if (!raf) raf = requestAnimationFrame(loop);
+        };
+
+        /* ── تفعيل/إلغاء وضع السكرول وتبديل الصورة ── */
+        /* الماسك بتاع الهفر: بنشيله أثناء الـ pin (أخف بكثير على الـ GPU) ونرجّعه بعد الخروج */
+        const maskOff = () => {
+          coffeeWrap.style.setProperty("-webkit-mask-image", "none");
+          coffeeWrap.style.setProperty("mask-image", "none");
+        };
+        const maskOn = () => {
+          coffeeWrap.style.removeProperty("-webkit-mask-image");
+          coffeeWrap.style.removeProperty("mask-image");
+        };
+        const clearClip = () => { gsap.set(coffeeWrap, { clearProps: "clipPath" }); };
+
+        let swapTween: gsap.core.Tween | null = null;
+
+        setScrollMode = (on: boolean, idx: number) => {
+          if (on !== scrollMode) {
+            scrollMode = on;
+            swapTween?.kill();
+            swapTween = null;
+
+            if (on) {
+              if (raf) { cancelAnimationFrame(raf); raf = 0; }
+
+              if (exiting) {
+                // رجعنا للـ pin وإحنا في نص الخروج: نكمل الكشف من الحالة الحالية (من غير قفزة)
+                exiting = false;
+                swapTween = gsap.to(coffeeWrap, {
+                  clipPath: FULL_CLIP, duration: 0.7, ease: CLIP_EASE, onComplete: clearClip,
+                });
+              } else if (coffeeWrap.style.opacity === "1") {
+                // الصورة ظاهرة بالهفر: نوسّع دايرة الكشف لحد ما تغطي الكونتينر كله ثم نشيل الماسك
+                const big = Math.hypot(growWrap.offsetWidth, growWrap.offsetHeight) * 1.3;
+                swapTween = gsap.to(coffeeWrap, {
+                  "--mr": `${big}px`, duration: 0.8, ease: "power2.out", onComplete: maskOff,
+                });
+              } else {
+                // الصورة مش ظاهرة: تنكشف بـ clip من تحت لفوق
+                maskOff();
+                coffeeWrap.style.opacity = "1";
+                swapTween = gsap.fromTo(
+                  coffeeWrap,
+                  { clipPath: "inset(100% 0% 0% 0%)" },
+                  { clipPath: FULL_CLIP, duration: SCROLL_REVEAL_DURATION, ease: CLIP_EASE, onComplete: clearClip }
+                );
+              }
+            } else {
+              // خروج تدريجي بنفس الـ clip (بيرجع بعكس طريقه)، وبعده نرجّع حالة الهفر
+              exiting = true;
+              maskOff();
+              swapTween = gsap.to(coffeeWrap, {
+                clipPath: "inset(100% 0% 0% 0%)",
+                duration: SCROLL_REVEAL_DURATION,
+                ease: CLIP_EASE,
+                onComplete: () => {
+                  exiting = false;
+                  clearClip();
+                  curR = targetR = 0;
+                  coffeeWrap.style.opacity = "0";
+                  coffeeWrap.style.setProperty("--mr", "0px");
+                  maskOn();
+                  projectIndex = 0;
+                  applyProjectImage(0);
+                  applyBadgeText(0);
+                },
+              });
+            }
+          }
+          if (on && idx !== projectIndex) {
+            const from = projectIndex;
+            projectIndex = idx;
+            clipToProject(from, idx);
+            applyBadgeText(idx);
+          }
+        };
 
         /* ── البادج ── */
         const BADGE_OFFSET_X = 78;
@@ -481,8 +664,6 @@ export default function Section3() {
         let badgeShown = false;
         let mouseX = -9999, mouseY = -9999;
         let hasMouse = false;
-        /* التبديل بيتفعّل بعد ما الماوس يدخل الصورة، وبيتنفذ لما يبعد عنها مسافة كافية */
-        let switchArmed = false;
 
         if (badge) {
           gsap.set(badge, { xPercent: -50, yPercent: -50, scale: 0, autoAlpha: 0 });
@@ -510,7 +691,6 @@ export default function Section3() {
         const showBadge = () => {
           if (!badge || badgeShown) return;
           badgeShown = true;
-          switchArmed = true;
           applyBadgeText(projectIndex);
           gsap.set(badge, { x: mouseX + BADGE_OFFSET_X, y: mouseY + BADGE_OFFSET_Y });
           gsap.to(badge, {
@@ -522,32 +702,10 @@ export default function Section3() {
           });
         };
 
-        /* أول ما الماوس يخرج من الصورة: يخفي البادج بس (من غير تبديل) */
         const hideBadge = () => {
           if (!badgeShown) return;
           badgeShown = false;
           animateBadgeOut();
-        };
-
-        /* تبديل المشروع للي بعده */
-        const switchProject = () => {
-          if (!switchArmed) return;
-          switchArmed = false;
-          projectIndex = (projectIndex + 1) % PROJECTS.length;
-          applyProjectImage(projectIndex);
-        };
-
-        /* المسافة المطلوبة للتبديل = أكبر من 160px أو 1.1 × عرض الصورة (بتكبر مع الكونتينر) */
-        const SWITCH_MIN_DISTANCE = 160;
-        const SWITCH_WIDTH_FACTOR = 1.1;
-
-        const maybeSwitch = () => {
-          if (!switchArmed || !coffeeImg) return;
-          const r  = coffeeImg.getBoundingClientRect();
-          const dx = Math.max(r.left - mouseX, 0, mouseX - r.right);
-          const dy = Math.max(r.top  - mouseY, 0, mouseY - r.bottom);
-          const threshold = Math.max(SWITCH_MIN_DISTANCE, r.width * SWITCH_WIDTH_FACTOR);
-          if (Math.hypot(dx, dy) > threshold) switchProject();
         };
 
         const syncBadge = () => {
@@ -560,7 +718,6 @@ export default function Section3() {
             moveBadgeY?.(mouseY + BADGE_OFFSET_Y);
           } else {
             hideBadge();
-            maybeSwitch();
           }
         };
 
@@ -574,17 +731,25 @@ export default function Section3() {
         const onDocLeave = () => {
           hasMouse = false;
           hideBadge();
-          switchProject();
         };
 
-        const onScroll = () => syncBadge();
+        // نجمع أحداث السكرول في frame واحد (بدل getBoundingClientRect مع كل حدث)
+        let scrollRaf = 0;
+        const onScroll = () => {
+          if (scrollRaf) return;
+          scrollRaf = requestAnimationFrame(() => {
+            scrollRaf = 0;
+            syncBadge();
+          });
+        };
 
         document.addEventListener("mousemove", onDocMove, { passive: true });
         document.documentElement.addEventListener("mouseleave", onDocLeave);
         window.addEventListener("scroll", onScroll, { passive: true });
 
-        /* ── Hover Reveal على الكونتينر ── */
+        /* ── Hover Reveal على الكونتينر (قبل الـ pin) ── */
         const onEnter = (e: MouseEvent) => {
+          if (scrollMode || exiting) return;
           const p = toLocal(e);
           targetX = curX = p.x;
           targetY = curY = p.y;
@@ -594,22 +759,25 @@ export default function Section3() {
         };
 
         const onMove = (e: MouseEvent) => {
+          if (scrollMode || exiting) return;
           const p = toLocal(e);
           targetX = p.x;
           targetY = p.y;
           targetR = getRevealRadius();
+          coffeeWrap.style.opacity = "1";
           startLoop();
         };
 
         const onLeave = () => {
+          growWrap.style.cursor = "default";
+          hideBadge();
+          if (scrollMode || exiting) return;
           targetR = 0;
           coffeeWrap.style.opacity = "0";
-          growWrap.style.cursor = "default";
           startLoop();
-          hideBadge();
         };
 
-        /* الضغط على الصورة: يفتح المشروع الحالي فقط بدايرة بتتوسع من مكان الضغطة */
+        /* الضغط على الصورة: يفتح المشروع الحالي بدايرة بتتوسع من مكان الضغطة */
         const onClick = (e: MouseEvent) => {
           if (viewerOpenRef.current) return;
           // الضغط على زرار/رابط جوه الأوفرلاي (Start a project) ما يفتحش المشروع
@@ -628,12 +796,9 @@ export default function Section3() {
           setLoaded(false);
           setViewer({ p, v: n % pr.variants.length });
 
-          // نخفي البادج ونجهز المشروع اللي بعده للهفر الجاي
+          // نخفي البادج (الصورة تفضل زي ما هي لأن التبديل بالسكرول)
           badgeShown = false;
-          switchArmed = false;
           animateBadgeOut();
-          projectIndex = (projectIndex + 1) % PROJECTS.length;
-          applyProjectImage(projectIndex);
         };
 
         growWrap.addEventListener("mouseenter", onEnter);
@@ -643,6 +808,8 @@ export default function Section3() {
 
         cleanupHover = () => {
           if (raf) cancelAnimationFrame(raf);
+          if (scrollRaf) cancelAnimationFrame(scrollRaf);
+          clipTl?.kill();
           document.removeEventListener("mousemove", onDocMove);
           document.documentElement.removeEventListener("mouseleave", onDocLeave);
           window.removeEventListener("scroll", onScroll);
@@ -651,6 +818,53 @@ export default function Section3() {
           growWrap.removeEventListener("mouseleave", onLeave);
           growWrap.removeEventListener("click", onClick);
         };
+      }
+
+      /* ════════════════════════════════════════════
+         5) Pin: الكونتينر يثبت بعد ما يكبر، والصور تتبدل مع السكرول
+
+         - بنثبّت السيكشن الرابع (pin + spacing) لمسافة سكرول محددة
+         - وبنثبّت طبقة الكونتينر (pinLayer) بـ pin حقيقي من غير spacing،
+           فالكونتينر يفضل ثابت تمامًا على الشاشة بدون أي هزّة
+         - خلال الـ pin: التقدّم 0 → 1 بيحدد أنهي مشروع ظاهر
+         ════════════════════════════════════════════ */
+      if (s4) {
+        const pinLen = () => window.innerHeight * PIN_VH_PER_PROJECT * PROJECTS.length;
+
+        /* Pin حقيقي للطبقة اللي شايلة الكونتينر (pinLayer):
+           بتتثبت بـ position: fixed من GSAP نفسه، فمفيش أي تعويض بالجافاسكريبت
+           ومفيش هزّة. الكونتينر جواها بيحافظ على مكانه ومقاسه من الحركة الأولى. */
+        if (pinLayer) {
+          ScrollTrigger.create({
+            trigger: s4,
+            start: "top top",
+            end: () => `+=${pinLen()}`,
+            pin: pinLayer,
+            pinSpacing: false,
+            invalidateOnRefresh: true,
+          });
+        }
+
+        const sync = (self: ScrollTrigger) => {
+          const on  = self.isActive || self.progress > 0;
+          const idx = Math.min(
+            PROJECTS.length - 1,
+            Math.floor(self.progress * PROJECTS.length)
+          );
+          setScrollMode?.(on, idx);
+        };
+
+        ScrollTrigger.create({
+          trigger: s4,
+          start: "top top",
+          end: () => `+=${pinLen()}`,
+          pin: true,
+          pinSpacing: true,
+          invalidateOnRefresh: true,
+          onUpdate: sync,
+          onToggle: sync,
+          onRefresh: sync,
+        });
       }
 
       return () => cleanupHover?.();
@@ -664,7 +878,8 @@ export default function Section3() {
 
   return (
     <section ref={sectionRef} className={styles.section} aria-labelledby="section3-title">
-      {IMAGES.map((img) => (
+      {IMAGES.map((img) => {
+        const item = (
         <div
           key={img.id}
           data-dir={img.dir}
@@ -686,24 +901,31 @@ export default function Section3() {
             <>
               <div ref={coffeeWrapRef} className={styles.coffeeOverlay}>
                 {PROJECTS.map((p, i) => (
-                  <Image
+                  <div
                     key={p.id}
-                    data-project={p.id}
-                    src={p.src}
-                    alt=""
-                    width={600}
-                    height={600}
-                    quality={100}
-                    unoptimized
-                    sizes="9vw"
-                    className={`${styles.img} ${i === 0 ? styles.imgActive : ""}`}
-                  />
+                    data-win={p.id}
+                    className={styles.clipWin}
+                    style={{ visibility: i === 0 ? "visible" : "hidden" }}
+                  >
+                    <div data-counter={p.id} className={styles.clipCounter}>
+                      <Image
+                        src={p.src}
+                        alt=""
+                        width={600}
+                        height={600}
+                        quality={100}
+                        unoptimized
+                        sizes="9vw"
+                        className={styles.img}
+                      />
+                    </div>
+                  </div>
                 ))}
               </div>
 
-              {/* ── محتوى الأوفرلاي: جوه الكونتينر نفسه ويتقص بحدوده،
-                  ويظهر مع سكرول الـ scale (مش بعده) ── */}
-              <div ref={overlayRef} className={styles.overlay}>
+              {/* ── محتوى الأوفرلاي: جوه الكونتينر (متمركز على مركزه) ويتقص بحدوده،
+                  وتدخل نصوصه بعد ما الكونتينر يكمل تكبيره ── */}
+              <div ref={overlayRef} className={styles.overlay} style={{ zIndex: -1 }}>
                 <div className={styles.overlayLeft}>
                   <h3 className={styles.ovTitle}>
                     {TITLE_LINES.map((line) => (
@@ -717,25 +939,41 @@ export default function Section3() {
 
                   <p className={styles.ovDesc}>
                     {DESC_LINES.map((line) => (
-                      <span key={line} data-anim="desc-line" className={styles.ovDescLine}>
-                        {line}
+                      <span key={line} className={styles.mask}>
+                        <span data-anim="desc-line" className={styles.maskInner}>
+                          {line}
+                        </span>
                       </span>
                     ))}
                   </p>
 
                   <div className={styles.ctaWrap}>
-                    <a href="#contact" data-anim="cta" className={styles.cta}>
-                      Start a project
-                    </a>
+                    {/* الـ <a> inline-block عشان البادينج بتاعه يدخل في ارتفاع الماسك (مفيش قص)،
+                        والـ padding الزيادة للماسك عشان رفعة الهفر ما تتقصش */}
+                    <span className={styles.mask} style={{ padding: "6px 0", margin: "-6px 0" }}>
+                      <span data-anim="cta" className={styles.maskInner}>
+                        <a href="#contact" className={styles.cta} style={{ display: "inline-block" }}>
+                          Start a project
+                        </a>
+                      </span>
+                    </span>
                     <span data-anim="line" className={styles.ctaLine} />
                   </div>
                 </div>
 
                 <ul className={styles.stats}>
                   {STATS.map((s) => (
-                    <li key={s.label} data-anim="stat" className={styles.stat}>
-                      <span className={styles.statValue}>{s.value}</span>
-                      <span className={styles.statLabel}>{s.label}</span>
+                    <li key={s.label} className={styles.stat}>
+                      <span className={styles.mask}>
+                        <span data-anim="stat-text" className={`${styles.maskInner} ${styles.statValue}`}>
+                          {s.value}
+                        </span>
+                      </span>
+                      <span className={styles.mask}>
+                        <span data-anim="stat-text" className={`${styles.maskInner} ${styles.statLabel}`}>
+                          {s.label}
+                        </span>
+                      </span>
                       <span data-anim="stat-line" className={styles.statLine} />
                     </li>
                   ))}
@@ -744,7 +982,26 @@ export default function Section3() {
             </>
           )}
         </div>
-      ))}
+        );
+
+        /* الكونتينر السفلي جوه طبقة (pinLayer) بنثبّتها بالـ pin الحقيقي من GSAP
+           (inline style عشان مفيش حاجة مطلوبة في الـ CSS) */
+        return img.id === "bt" ? (
+          <div
+            key={img.id}
+            style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 50 }}
+          >
+            <div
+              ref={pinLayerRef}
+              style={{ position: "relative", width: "100%", height: "100%", pointerEvents: "none" }}
+            >
+              {item}
+            </div>
+          </div>
+        ) : (
+          item
+        );
+      })}
 
       <div ref={contentRef} className={styles.content}>
         <h2 id="section3-title" className={styles.title}>
@@ -757,7 +1014,7 @@ export default function Section3() {
       <div
         ref={badgeRef}
         className={styles.hoverBadge}
-        style={{ visibility: "hidden", opacity: 0 }}
+        style={{ visibility: "hidden", opacity: 0, zIndex: 60 }}
         aria-hidden="true"
       >
         <span className={styles.badgeSmall}>Our work</span>

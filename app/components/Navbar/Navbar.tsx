@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import styles from "./Navbar.module.css";
 
-const LINKS = ["Home", "Work", "About", "Contact"];
+const LINKS = [
+  { label: "Home", href: "#" },
+  { label: "Work", href: "#" },
+  { label: "About", href: "#" },
+  { label: "Contact", href: "#" },
+  { label: "Terms", href: "/terms" },
+  { label: "Privacy Policy", href: "/policy" },
+];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -23,10 +31,10 @@ export default function Navbar() {
       </a>
 
       <nav className={styles.links} aria-label="Primary">
-        {LINKS.map((link) => (
-          <a key={link} href="#" className={styles.link}>
-            {link}
-          </a>
+        {LINKS.map(({ label, href }) => (
+          <Link key={label} href={href} className={styles.link}>
+            {label}
+          </Link>
         ))}
       </nav>
 

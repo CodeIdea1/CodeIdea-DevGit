@@ -43,7 +43,7 @@
   font-weight: 500;
   line-height: 1.12;
   letter-spacing: 0.02em;
-  color: #010d1a;
+  color: #1d272e;
   margin-bottom: 1rem;
 }
 
@@ -86,7 +86,7 @@
 
 .btnGhost {
   background: transparent;
-  color: #010d1a;
+  color: #1d272e;
 }
 
 .btnGhost:hover {
@@ -114,20 +114,29 @@
 .imgRightBottom { bottom: 6%; right: -16%; width: 34vw; }
 .imgLeftTop     { top: 2%;    left: -16%;  width: 36vw; }
 .imgLeftBottom  { bottom: 6%; left: -16%;  width: 34vw; }
-.imgTop       {   top: -10%;
-  left: 50%;
-  width: 32vw;
-  margin-left: -16vw; }  /* نص العرض → توسيط ثابت */
-  /* شيلت: transform: translateX(-50%); */
 
-/* الصورة السفلية (qq.webp + صور المشاريع) = الكونتينر */
+/* الصورة العلوية: في المنتصف تمامًا (من غير transform عشان ما يتعارضش مع GSAP) */
+.imgTop {
+  top: -10%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 32vw;
+}
+
+/* ═══════════════════════════════════════════
+   الكونتينر السفلي (qq.webp + صور المشاريع)
+   - متوسّط بالـ margin auto (من غير transform)
+   - GSAP بيحرّك width / height / y فقط ليتحول لحجم السيكشن الرابع
+   ═══════════════════════════════════════════ */
 .imgBottom {
-  bottom: -6%;   /* كان -12% */
-  left: 50%;
-  width: 36vw;                /* كان 30vw → أكبر */
+  bottom: -6%;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 36vw;
   aspect-ratio: 2 / 1;
-  transform: translateX(-50%);
-  overflow: hidden;           /* بيقص محتوى الأوفرلاي جوه حدود الكونتينر */
+  overflow: hidden;
   border-radius: 0;
   z-index: 1;
   background: linear-gradient(135deg, #98AFBB 0%, #E1E1DF 100%);
@@ -135,26 +144,26 @@
   align-items: center;
   justify-content: center;
   padding: 1.5vw;
-  margin-left: auto;
-  margin-right: auto;
-  right: auto;
   pointer-events: auto;
   cursor: default;
-  /* عشان النص جوه الأوفرلاي يعيد الرسم بوضوح مع التكبير (بدل ما يتمط من نسخة صغيرة) */
-  will-change: auto;
+  will-change: transform;
+  contain: layout style;   /* تغيير مقاس الكونتينر ما يأثرش على باقي الصفحة */
 }
 
+/* صور الكونتينر: مقاسها ثابت (المقاس النهائي، بيتحدد من JS في --img-w)
+   وبتتوسّط بـ inset + margin auto. الحركة والتكبير بـ transform فقط من JS
+   (translate + scale) فمفيش layout ولا إعادة رسم مع كل frame. */
 .imgBottom .img,
 .coffeeOverlay .img {
   display: block;
-  width: 36% !important;
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: var(--img-w, 13vw) !important;
   height: auto !important;
   object-fit: contain;
   border-radius: 0 !important;
-  position: absolute;
-  left: 50%;
-  top: var(--img-top, 36%); /* بيتحرك من 36% لـ 66% مع سكرول الكونتينر (من الـ GSAP) */
-  transform: translate(-50%, -50%);
+  transform-origin: 50% 50%;
 }
 
 /* ── Hover Reveal ── */
@@ -187,12 +196,16 @@
   transition: opacity 0.35s ease;
 }
 
-.coffeeOverlay .img {
-  opacity: 0;
+/* نافذة كل مشروع + الطبقة المعاكسة: التبديل بالـ clip بيتم بتحريكهم بعكس بعض (GSAP) */
+.clipWin,
+.clipCounter {
+  position: absolute;
+  inset: 0;
 }
 
-.coffeeOverlay .imgActive {
-  opacity: 1;
+.clipWin {
+  overflow: hidden;
+  visibility: hidden;   /* JS بيظهر المشروع الحالي */
 }
 
 /* ═══════════════════════════════════════════
@@ -259,13 +272,14 @@
 
 /* ═══════════════════════════════════════════
    Overlay: جوه الكونتينر (مش fixed)
-   بحجم الشاشة، والـ GSAP بيصغّره 1/coverScale ويحط مكانه،
-   فيكبر مع الكونتينر ويستقر على حجم الشاشة في نهاية الـ scale.
+   حجمه ثابت = حجم الشاشة، والكونتينر بيقصه بحدوده (overflow: hidden)
+   نصوصه مخفية بالماسكات (.mask) وبتدخل بـ translate بعد ما الكونتينر يكمل تكبيره
    ═══════════════════════════════════════════ */
 .overlay {
   position: absolute;
   top: 0;
-  left: 0;
+  left: 50%;
+  margin-left: -50vw;   /* متمركز على مركز الكونتينر: محتواه ما يتحركش يمين/شمال مع التكبير والتصغير */
   width: 100vw;
   height: 100vh;
   z-index: 3;
@@ -275,8 +289,7 @@
   gap: 4vw;
   padding: clamp(140px, 22vh, 250px) clamp(24px, 6vw, 110px) 8vh;
   box-sizing: border-box;
-  transform-origin: 0 0;
-  visibility: hidden;   /* GSAP بيفعّله (autoAlpha) أول ما الـ timeline يتجهز */
+  visibility: hidden;   /* GSAP بيفعّله (autoAlpha) في آخر الحركة */
   pointer-events: none;
 }
 
@@ -474,7 +487,7 @@
 .vClose:hover {
   background: var(--accent);
   border-color: var(--accent);
-  color: #0f161b;
+  color: #1d272e;
   transform: rotate(-2deg) scale(1.04);
 }
 
@@ -558,7 +571,7 @@
 .vChipActive {
   background: var(--accent);
   border-color: var(--accent);
-  color: #0f161b;
+  color: #1d272e;
 }
 
 .vVisit {
@@ -569,7 +582,7 @@
   padding: 0.95rem 1.8rem;
   border-radius: 999px;
   background: var(--accent);
-  color: #0f161b;
+  color: #1d272e;
   font-family: var(--font-orbitron), sans-serif;
   font-size: 0.78rem;
   letter-spacing: 0.12em;
@@ -728,7 +741,7 @@
 .vArrow:hover {
   background: var(--accent);
   border-color: var(--accent);
-  color: #0f161b;
+  color: #1d272e;
   transform: scale(1.08);
 }
 
