@@ -6,7 +6,7 @@ import Link from "next/link";
 import styles from "./Navbar.module.css";
 
 const LINKS = [
-  { label: "Home", href: "#" },
+  { label: "Home", href: "/" },
   { label: "Work", href: "#" },
   { label: "About", href: "#" },
   { label: "Contact", href: "#" },
@@ -26,9 +26,9 @@ export default function Navbar() {
 
   return (
     <header className={`${styles.nav} ${scrolled ? styles.navScrolled : ""}`}>
-      <a href="#" className={styles.brand} aria-label="Home">
+      <Link href="/" className={styles.brand} aria-label="Home">
         <Image src="/lgog.png" alt="Logo" width={80} height={80} className={styles.logo} />
-      </a>
+      </Link>
 
       <nav className={styles.links} aria-label="Primary">
         {LINKS.map(({ label, href }) => (
