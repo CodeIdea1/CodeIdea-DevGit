@@ -263,28 +263,69 @@
 
 .panel {
   position: absolute;
-  right: clamp(24px, 7vw, 110px);
-  top: 50%;
-  width: clamp(190px, 22vw, 260px);
-  aspect-ratio: 3 / 4;
-  margin: calc(clamp(190px, 22vw, 260px) * -0.67) 0 0;
+  top: clamp(-120px, -12vh, -80px);
+  right: clamp(150px, 12vw, 190px);
+  width: clamp(260px, 25vw, 320px);
+  min-height: 132px;
+  padding: 20px 24px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  color: #fff;
-  border-radius: 34px;
+  justify-content: flex-start;
+  gap: 18px;
+  color: var(--ink);
+  border-radius: 26px;
+  background:
+    radial-gradient(ellipse at 0% 50%, rgba(255, 255, 255, 0.48), transparent 58%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.24));
+  border-color: rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 24px 55px -30px rgba(20, 53, 82, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -12px 26px rgba(255, 255, 255, 0.12);
   will-change: transform;
 }
-.shield { width: 42%; filter: drop-shadow(0 4px 12px rgba(30, 80, 130, 0.35)); }
-.pLine {
-  width: 56%;
-  height: 11px;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, 0.7);
+
+.shieldWrap {
+  display: grid;
+  flex: 0 0 68px;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    0 8px 20px rgba(35, 75, 115, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
-.short { width: 36%; }
+
+.panelLabel {
+  display: block;
+  color: #52718b;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+}
+
+.panelCaption {
+  display: block;
+  margin-top: 8px;
+  color: #1d272e;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: clamp(0.78rem, 1vw, 0.9rem);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.shield {
+  width: 31px;
+  color: #52718b;
+  filter: drop-shadow(0 3px 8px rgba(30, 80, 130, 0.18));
+}
+
+.panelCopy { min-width: 0; }
 
 .note {
   position: absolute;
@@ -666,7 +707,8 @@
   }
 
   .panel {
-    right: 5vw;
+    right: 15vw;
+    top: 35%;
   }
 }
 
@@ -728,8 +770,32 @@
   }
 
   .panel {
-    right: 14px;
-    width: clamp(150px, 44vw, 180px);
+    top: 10px;
+    right: 12px;
+    width: min(260px, calc(100vw - 44px));
+    min-height: 100px;
+    padding: 14px 16px;
+    border-radius: 22px;
+    gap: 14px;
+  }
+
+  .shieldWrap {
+    flex-basis: 54px;
+    width: 54px;
+    height: 54px;
+  }
+
+  .shield {
+    width: 26px;
+  }
+
+  .panelLabel {
+    font-size: 0.48rem;
+  }
+
+  .panelCaption {
+    margin-top: 6px;
+    font-size: 0.72rem;
   }
 }
 

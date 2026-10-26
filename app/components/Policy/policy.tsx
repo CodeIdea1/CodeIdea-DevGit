@@ -318,24 +318,28 @@ export default function PolicyPage() {
 
           <div className={styles.stage}>
             <div className={`${styles.glass} ${styles.panel}`} data-hero-panel>
-              <svg viewBox="0 0 48 56" className={styles.shield} aria-hidden>
-                <path
-                  d="M24 3 5 10v16c0 13 8 22 19 27 11-5 19-14 19-27V10L24 3Z"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                />
-                <path
-                  d="m16 28 6 6 11-12"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span className={styles.pLine} />
-              <span className={`${styles.pLine} ${styles.short}`} />
+              <span className={styles.shieldWrap}>
+                <svg viewBox="0 0 48 56" className={styles.shield} aria-hidden>
+                  <path
+                    d="M24 3 5 10v16c0 13 8 22 19 27 11-5 19-14 19-27V10L24 3Z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <path
+                    d="m16 28 6 6 11-12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <span className={styles.panelCopy}>
+                <span className={styles.panelLabel}>PRIVACY, BY DESIGN</span>
+                <span className={styles.panelCaption}>Your data stays yours.</span>
+              </span>
             </div>
 
             {NOTES.map((n) => (
