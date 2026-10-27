@@ -126,8 +126,7 @@
 
 /* ═══════════════════════════════════════════
    الكونتينر السفلي (qq.webp + صور المشاريع)
-   - متوسّط بالـ margin auto (من غير transform)
-   - GSAP بيحرّك width / height / y فقط ليتحول لحجم السيكشن الرابع
+   GSAP يحركه بـ transform فقط حتى لا يعيد المتصفح حساب التخطيط أثناء التمرير.
    ═══════════════════════════════════════════ */
 .imgBottom {
   bottom: -6%;
@@ -147,13 +146,24 @@
   pointer-events: auto;
   cursor: default;
   will-change: transform;
-  contain: layout style;   /* تغيير مقاس الكونتينر ما يأثرش على باقي الصفحة */
+  transform-origin: 0 0;
+}
+
+.containerImage {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: block;
+  width: 100%;
+  height: auto;
+  z-index: 1;
+  transform-origin: 50% 100%;
+  will-change: transform;
 }
 
 /* صور الكونتينر: مقاسها ثابت (المقاس النهائي، بيتحدد من JS في --img-w)
    وبتتوسّط بـ inset + margin auto. الحركة والتكبير بـ transform فقط من JS
    (translate + scale) فمفيش layout ولا إعادة رسم مع كل frame. */
-.imgBottom .img,
 .coffeeOverlay .img {
   display: block;
   position: absolute;
@@ -164,36 +174,16 @@
   object-fit: contain;
   border-radius: 0 !important;
   transform-origin: 50% 50%;
+  will-change: transform;
 }
 
-/* ── Hover Reveal ── */
+/* تظهر صورة المشروع مباشرة عند المرور عليها، بدون ماسك أو انتقال. */
 .coffeeOverlay {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
   opacity: 0;
-  --mx: 0px;
-  --my: 0px;
-  --mr: 0px;
-
-  -webkit-mask-image: radial-gradient(
-    circle var(--mr) at var(--mx) var(--my),
-    #000 0%,
-    #000 40%,
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    circle var(--mr) at var(--mx) var(--my),
-    #000 0%,
-    #000 40%,
-    transparent 100%
-  );
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  transition: opacity 0.35s ease;
 }
 
 /* نافذة كل مشروع + الطبقة المعاكسة: التبديل بالـ clip بيتم بتحريكهم بعكس بعض (GSAP) */
@@ -270,26 +260,20 @@
   margin-top: 0.1rem;
 }
 
-/* ═══════════════════════════════════════════
-   Overlay: جوه الكونتينر (مش fixed)
-   حجمه ثابت = حجم الشاشة، والكونتينر بيقصه بحدوده (overflow: hidden)
-   نصوصه مخفية بالماسكات (.mask) وبتدخل بـ translate بعد ما الكونتينر يكمل تكبيره
-   ═══════════════════════════════════════════ */
+/* يظهر فوق الصورة على مستوى الشاشة بينما طبقة الصورة مثبتة أثناء التمرير. */
 .overlay {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  margin-left: -50vw;   /* متمركز على مركز الكونتينر: محتواه ما يتحركش يمين/شمال مع التكبير والتصغير */
+  position: fixed;
+  inset: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 3;
+  z-index: 60;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 4vw;
   padding: clamp(140px, 22vh, 250px) clamp(24px, 6vw, 110px) 8vh;
   box-sizing: border-box;
-  visibility: hidden;   /* GSAP بيفعّله (autoAlpha) في آخر الحركة */
+  visibility: hidden;
   pointer-events: none;
 }
 

@@ -12,7 +12,7 @@ const IMAGES = [
   { id: "lt", src: "/web-3.png", cls: "imgLeftTop",     dir: "left"         },
   { id: "lb", src: "/gg.png", cls: "imgLeftBottom",  dir: "left_bottom"  },
   { id: "tp", src: "/gg.png", cls: "imgTop",         dir: "top"          },
-  { id: "bt", src: "/qq.webp",  cls: "imgBottom",      dir: "bottom"       },
+  { id: "bt", src: "/ccll.png", cls: "imgBottom",      dir: "bottom"       },
 ] as const;
 
 const OFFSETS: Record<string, { x: number; y: number }> = {
@@ -96,34 +96,19 @@ const STATS = [
   { value: "99%",  label: "Client satisfaction" },
 ];
 
-/* حجم الدايرة اللي بتكشف الصورة مع الماوس */
-const REVEAL_RADIUS_RATIO = 0.36;
-
 /* ── ضبط حركة الكونتينر مع السكرول ──
-   IMG_WIDTH_RATIO             : عرض صورة المشروع بالنسبة لعرض الكونتينر (36%)
-   IMG_TOP_START / IMG_TOP_END : مكان مركز الصورة جوه الكونتينر (بالنسبة لارتفاعه)
-   الصورة بتتحرك وتكبر بـ transform فقط (GPU) بدل width/top، فمفيش إعادة حساب
-   تخطيط ولا إعادة رسم للصورة مع كل frame (ده كان سبب التهنيج). */
+   IMG_WIDTH_RATIO             : عرض الصورة بالنسبة لعرض الكونتينر النهائي (36%)
+   IMG_TOP_START / IMG_TOP_END : مكان مركز الصورة داخل الكونتينر (بالنسبة لارتفاعه) */
 const IMG_WIDTH_RATIO = 0.36;
 const IMG_TOP_START   = 0.36;
 const IMG_TOP_END     = 0.66;
 
-/* النصوص تبدأ بس بعد ما الكونتينر يخلص تكبيره تمامًا، وتتأخر قليلًا بعدها */
-const TEXT_SHOW_AT   = 0.999;   // تقدّم الكونتينر (0 → 1) اللي عنده النصوص تدخل
-const TEXT_HIDE_AT   = 0.98;    // لو رجعت تحت القيمة دي النصوص تنزل
-const TEXT_DELAY     = 0.4;
-const TEXT_DURATION  = 1.3;
-const TEXT_EASE      = "power4.out";
-
 /* انسيابية نزول وتكبير الكونتينر: كل ما القيمة أقل = أسرع وأقرب للسكرول */
 const CONTAINER_SCRUB = 0.25;
 
-/* مدة وإيزي أنيميشن الـ clip عند تبديل الصور بالسكرول */
+/* مدة وإيزي انتقال صور المشاريع أثناء التمرير */
 const CLIP_DURATION = 2.4;
 const CLIP_EASE     = "power2.inOut";
-
-/* ظهور/اختفاء صورة المشروع عند دخول/خروج منطقة الـ pin (بالـ clip) */
-const SCROLL_REVEAL_DURATION = 1.1;
 
 /* ── التثبيت (Pin) بعد ما الكونتينر يكبر ──
    PIN_VH_PER_PROJECT : مسافة السكرول (بوحدة ارتفاع الشاشة) لكل مشروع
@@ -304,8 +289,11 @@ export default function Section3() {
       const pinLayer   = pinLayerRef.current;
       if (!section || !growWrap) return;
 
-      /* بتتعمل جوه بلوك الهفر، وبيناديها الـ pin عشان يبدّل الصورة مع السكرول */
+      /* بتتعمل جوه بلوك التفاعل، وبيناديها الـ pin عشان يبدّل الصورة مع السكرول */
       let setScrollMode: ((on: boolean, idx: number) => void) | null = null;
+      let setOverlayVisibility: (show: boolean) => void = () => {};
+      let overlayIsVisible = false;
+      let overlayTimeline: gsap.core.Timeline | null = null;
 
       /* ════════════════════════════════════════════
          1) باقي الصور تدخل من الجوانب
@@ -352,57 +340,60 @@ export default function Section3() {
       );
 
       /* ════════════════════════════════════════════
-         3) الكونتينر: ينزل مع السكرول ويكبر ليصبح السيكشن الرابع
-
-         - الكونتينر مثبّت بالـ CSS أسفل السيكشن (bottom + margin auto)
-         - بنحرّك 3 حاجات بس: width / height / y
-           width  → عرض السيكشن الرابع
-           height → ارتفاع السيكشن الرابع
-           y      → ينزل لحد ما حافته السفلية تطابق حافة السيكشن الرابع
-         - في نهاية الحركة مقاسه ومكانه = السيكشن الرابع بالظبط
-         - القيم بتتحسب من العناصر نفسها وبتتعاد عند تغيير حجم الشاشة
+         3) الكونتينر يتحرك ويكبر ليغطي السيكشن الرابع باستخدام transform فقط
          ════════════════════════════════════════════ */
-      const s4 = document.getElementById("section4");
+      const nextSection = section.nextElementSibling;
+      const s4 = nextSection instanceof HTMLElement && nextSection.id === "section4"
+        ? nextSection
+        : null;
 
       if (s4) {
         /* ── قياسات الكونتينر (الحجم الأصلي من الـ CSS + حجم السيكشن الرابع) ──
            بتتعاد مع كل refresh (تغيير حجم الشاشة)، ومن غير ما نتأثر بأي inline style
            حطّه GSAP أثناء الحركة. */
-        const imgEls = Array.from(growWrap.querySelectorAll<HTMLElement>(`.${styles.img}`));
-        const dims = { w0: 1, h0: 1, w1: 1, h1: 1 };
+        const imgEls = Array.from(
+          growWrap.querySelectorAll<HTMLElement>(`.${styles.coffeeOverlay} .${styles.img}`)
+        );
+        const backdropImg = growWrap.querySelector<HTMLElement>(`.${styles.containerImage}`);
+        const dims = { w0: 1, h0: 1, w1: 1, h1: 1, x: 0, y: 0 };
 
         const measure = () => {
-          const { width, height } = growWrap.style;
-          growWrap.style.width  = "";
-          growWrap.style.height = "";
+          const transform = growWrap.style.transform;
+          growWrap.style.transform = "none";
           dims.w0 = growWrap.offsetWidth  || 1;
           dims.h0 = growWrap.offsetHeight || 1;
-          growWrap.style.width  = width;
-          growWrap.style.height = height;
+          const wrapRect = growWrap.getBoundingClientRect();
+          const targetRect = s4.getBoundingClientRect();
           dims.w1 = s4.offsetWidth  || 1;
           dims.h1 = s4.offsetHeight || 1;
-          // مقاس الصورة ثابت = مقاسها النهائي، والتصغير بيتم بالـ scale فقط
+          dims.x = targetRect.left - wrapRect.left;
+          dims.y = targetRect.top - wrapRect.top;
+          growWrap.style.transform = transform;
           growWrap.style.setProperty("--img-w", `${dims.w1 * IMG_WIDTH_RATIO}px`);
         };
 
-        /* الصور (الأساسية + صور المشاريع) بتتحرك وتكبر بـ transform فقط:
-           - scale  = عرض الكونتينر الحالي ÷ عرضه النهائي
-           - y      = المسافة بين مركز الكونتينر ومركز الصورة المطلوب */
+        /* تحريك وتكبير الحاوية والصور بالـ transform لتجنب layout وpaint أثناء التمرير. */
+        const applyContainer = (p: number) => {
+          const sx = (dims.w0 + (dims.w1 - dims.w0) * p) / dims.w0;
+          const sy = (dims.h0 + (dims.h1 - dims.h0) * p) / dims.h0;
+          growWrap.style.transform =
+            `translate3d(${dims.x * p}px, ${dims.y * p}px, 0) scale(${sx}, ${sy})`;
+        };
+
         const applyImages = (p: number) => {
           const w = dims.w0 + (dims.w1 - dims.w0) * p;
           const h = dims.h0 + (dims.h1 - dims.h0) * p;
-          const scale = w / dims.w1;
-          const y = (IMG_TOP_START + (IMG_TOP_END - IMG_TOP_START) * p - 0.5) * h;
-          const t = `translate3d(0, ${y}px, 0) scale(${scale})`;
+          const containerScaleY = h / dims.h0;
+          // عوّض تكبير الحاوية حتى لا تُضرب حركة الصورة في مقياس الحاوية مرة ثانية.
+          const scaleX = dims.w0 / dims.w1;
+          const scaleY = (w / dims.w1) / containerScaleY;
+          const y = (IMG_TOP_START + (IMG_TOP_END - IMG_TOP_START) * p - 0.5) * dims.h0;
+          const t = `translate3d(0, ${y}px, 0) scale(${scaleX}, ${scaleY})`;
           for (let i = 0; i < imgEls.length; i++) imgEls[i].style.transform = t;
+          if (backdropImg) backdropImg.style.transform = `scaleY(${(w / dims.w0) / containerScaleY})`;
         };
 
-        /* ── نصوص الأوفرلاي ──
-           كل سطر جوه ماسك (overflow hidden) ويطلع من تحت لفوق بـ translate فقط.
-           الأوفرلاي بيفضل ظاهر طول الوقت (الماسكات هي اللي مخفية السطور)، فالطبقات
-           بتتجهّز مسبقًا ومفيش تهنيج لحظة الظهور. الأنيميشن زمني (مش مربوط بالسكرول). */
-        let setText: (show: boolean) => void = () => {};
-
+        /* ── تجهيز المحتوى ليظهر فور اكتمال تكبير الكونتينر ── */
         if (overlay) {
           const lines = overlay.querySelectorAll<HTMLElement>(
             '[data-anim="title-line"], [data-anim="desc-line"], [data-anim="cta"], [data-anim="stat-text"]'
@@ -413,24 +404,36 @@ export default function Section3() {
 
           gsap.set(lines, { yPercent: 110 });
           gsap.set(rules, { scaleX: 0 });
-          overlay.style.visibility = "visible";
+          overlay.style.visibility = "hidden";
 
-          // كل النصوص بنفس التوقيت بالظبط: من غير stagger
-          const textTl = gsap
-            .timeline({ paused: true })
-            .to(lines, { yPercent: 0, duration: TEXT_DURATION, ease: TEXT_EASE }, TEXT_DELAY)
-            .to(rules, { scaleX: 1, duration: TEXT_DURATION, ease: TEXT_EASE }, TEXT_DELAY);
-
-          let textShown = false;
-          setText = (show: boolean) => {
-            if (show === textShown) return;
-            textShown = show;
-            if (show) textTl.timeScale(1).play();
-            else      textTl.timeScale(2.5).reverse();
+          setOverlayVisibility = (show: boolean) => {
+            if (show === overlayIsVisible) return;
+            overlayIsVisible = show;
+            overlay.style.visibility = show ? "visible" : "hidden";
+            if (show) {
+              overlayTimeline = gsap.timeline()
+                .to(lines, {
+                  yPercent: 0,
+                  duration: 0.8,
+                  stagger: 0.045,
+                  ease: "power3.out",
+                })
+                .to(rules, {
+                  scaleX: 1,
+                  duration: 0.65,
+                  stagger: 0.1,
+                  ease: "power2.out",
+                }, "<0.15");
+            } else {
+              overlayTimeline?.kill();
+              gsap.set(lines, { yPercent: 110 });
+              gsap.set(rules, { scaleX: 0 });
+            }
           };
         }
 
         measure();
+        applyContainer(0);
         applyImages(0);
 
         let tl: gsap.core.Timeline | null = null;
@@ -446,33 +449,20 @@ export default function Section3() {
             scrub: CONTAINER_SCRUB,
             invalidateOnRefresh: true,
             onRefreshInit: measure,
-            onRefresh: () => applyImages(progressNow()),
+            onRefresh: () => {
+              const p = progressNow();
+              applyContainer(p);
+              applyImages(p);
+            },
           },
           onUpdate: () => {
             const p = progressNow();
+            applyContainer(p);
             applyImages(p);
-            // النصوص مربوطة بتقدّم الكونتينر الفعلي (بعد الـ scrub) مش بالسكرول الخام
-            if (p >= TEXT_SHOW_AT) setText(true);
-            else if (p < TEXT_HIDE_AT) setText(false);
           },
         });
 
-        // الكونتينر نفسه: width / height / y فقط
-        tl.to(
-          growWrap,
-          {
-            width: () => s4.offsetWidth,
-            height: () => s4.offsetHeight,
-            y: () => {
-              const secTop    = section.getBoundingClientRect().top;
-              const s4Bottom  = s4.getBoundingClientRect().bottom - secTop;
-              const wrapBottom = growWrap.offsetTop + growWrap.offsetHeight;
-              return s4Bottom - wrapBottom;
-            },
-            duration: 1,
-          },
-          0
-        );
+        tl.to({ progress: 0 }, { progress: 1, duration: 1 }, 0);
       }
 
       /* ════════════════════════════════════════════
@@ -493,9 +483,6 @@ export default function Section3() {
         let projectIndex = 0;
         /* true = إحنا جوه/بعد الـ pin: الصورة ظاهرة كاملة وبتتبدل بالسكرول */
         let scrollMode = false;
-        /* true = الصورة في نص أنيميشن الخروج (clip) بعد الرجوع من الـ pin */
-        let exiting = false;
-        const FULL_CLIP = "inset(0% 0% 0% 0%)";
 
         let clipTl: gsap.core.Timeline | null = null;
 
@@ -545,107 +532,15 @@ export default function Section3() {
           if (badgeName) badgeName.textContent = `${PROJECTS[i].name} project`;
         };
 
-        let raf = 0;
-        let curX = 0, curY = 0, curR = 0;
-        let targetX = 0, targetY = 0, targetR = 0;
-
-        // حجم الدايرة اللي بتكشف الصورة
-        const getRevealRadius = () => growWrap.offsetHeight * REVEAL_RADIUS_RATIO;
-
-        // إحداثيات الماوس جوه الكونتينر
-        const toLocal = (e: MouseEvent) => {
-          const rect = growWrap.getBoundingClientRect();
-          return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-        };
-
-        const loop = () => {
-          if (scrollMode || exiting) { raf = 0; return; }
-
-          curX += (targetX - curX) * 0.25;
-          curY += (targetY - curY) * 0.25;
-          curR += (targetR - curR) * 0.15;
-
-          coffeeWrap.style.setProperty("--mx", `${curX}px`);
-          coffeeWrap.style.setProperty("--my", `${curY}px`);
-          coffeeWrap.style.setProperty("--mr", `${curR}px`);
-
-          const settled =
-            Math.abs(targetX - curX) < 0.1 &&
-            Math.abs(targetY - curY) < 0.1 &&
-            Math.abs(targetR - curR) < 0.1;
-
-          raf = settled ? 0 : requestAnimationFrame(loop);
-        };
-        const startLoop = () => {
-          if (scrollMode || exiting) return;
-          if (!raf) raf = requestAnimationFrame(loop);
-        };
-
         /* ── تفعيل/إلغاء وضع السكرول وتبديل الصورة ── */
-        /* الماسك بتاع الهفر: بنشيله أثناء الـ pin (أخف بكثير على الـ GPU) ونرجّعه بعد الخروج */
-        const maskOff = () => {
-          coffeeWrap.style.setProperty("-webkit-mask-image", "none");
-          coffeeWrap.style.setProperty("mask-image", "none");
-        };
-        const maskOn = () => {
-          coffeeWrap.style.removeProperty("-webkit-mask-image");
-          coffeeWrap.style.removeProperty("mask-image");
-        };
-        const clearClip = () => { gsap.set(coffeeWrap, { clearProps: "clipPath" }); };
-
-        let swapTween: gsap.core.Tween | null = null;
-
         setScrollMode = (on: boolean, idx: number) => {
           if (on !== scrollMode) {
             scrollMode = on;
-            swapTween?.kill();
-            swapTween = null;
-
-            if (on) {
-              if (raf) { cancelAnimationFrame(raf); raf = 0; }
-
-              if (exiting) {
-                // رجعنا للـ pin وإحنا في نص الخروج: نكمل الكشف من الحالة الحالية (من غير قفزة)
-                exiting = false;
-                swapTween = gsap.to(coffeeWrap, {
-                  clipPath: FULL_CLIP, duration: 0.7, ease: CLIP_EASE, onComplete: clearClip,
-                });
-              } else if (coffeeWrap.style.opacity === "1") {
-                // الصورة ظاهرة بالهفر: نوسّع دايرة الكشف لحد ما تغطي الكونتينر كله ثم نشيل الماسك
-                const big = Math.hypot(growWrap.offsetWidth, growWrap.offsetHeight) * 1.3;
-                swapTween = gsap.to(coffeeWrap, {
-                  "--mr": `${big}px`, duration: 0.8, ease: "power2.out", onComplete: maskOff,
-                });
-              } else {
-                // الصورة مش ظاهرة: تنكشف بـ clip من تحت لفوق
-                maskOff();
-                coffeeWrap.style.opacity = "1";
-                swapTween = gsap.fromTo(
-                  coffeeWrap,
-                  { clipPath: "inset(100% 0% 0% 0%)" },
-                  { clipPath: FULL_CLIP, duration: SCROLL_REVEAL_DURATION, ease: CLIP_EASE, onComplete: clearClip }
-                );
-              }
-            } else {
-              // خروج تدريجي بنفس الـ clip (بيرجع بعكس طريقه)، وبعده نرجّع حالة الهفر
-              exiting = true;
-              maskOff();
-              swapTween = gsap.to(coffeeWrap, {
-                clipPath: "inset(100% 0% 0% 0%)",
-                duration: SCROLL_REVEAL_DURATION,
-                ease: CLIP_EASE,
-                onComplete: () => {
-                  exiting = false;
-                  clearClip();
-                  curR = targetR = 0;
-                  coffeeWrap.style.opacity = "0";
-                  coffeeWrap.style.setProperty("--mr", "0px");
-                  maskOn();
-                  projectIndex = 0;
-                  applyProjectImage(0);
-                  applyBadgeText(0);
-                },
-              });
+            coffeeWrap.style.opacity = on ? "1" : "0";
+            if (!on) {
+              projectIndex = 0;
+              applyProjectImage(0);
+              applyBadgeText(0);
             }
           }
           if (on && idx !== projectIndex) {
@@ -747,34 +642,17 @@ export default function Section3() {
         document.documentElement.addEventListener("mouseleave", onDocLeave);
         window.addEventListener("scroll", onScroll, { passive: true });
 
-        /* ── Hover Reveal على الكونتينر (قبل الـ pin) ── */
-        const onEnter = (e: MouseEvent) => {
-          if (scrollMode || exiting) return;
-          const p = toLocal(e);
-          targetX = curX = p.x;
-          targetY = curY = p.y;
-          targetR = getRevealRadius();
+        /* إظهار الصورة مباشرة عند المرور عليها، بدون ماسك أو حركة. */
+        const onEnter = () => {
+          if (scrollMode) return;
           coffeeWrap.style.opacity = "1";
-          startLoop();
-        };
-
-        const onMove = (e: MouseEvent) => {
-          if (scrollMode || exiting) return;
-          const p = toLocal(e);
-          targetX = p.x;
-          targetY = p.y;
-          targetR = getRevealRadius();
-          coffeeWrap.style.opacity = "1";
-          startLoop();
         };
 
         const onLeave = () => {
           growWrap.style.cursor = "default";
           hideBadge();
-          if (scrollMode || exiting) return;
-          targetR = 0;
+          if (scrollMode) return;
           coffeeWrap.style.opacity = "0";
-          startLoop();
         };
 
         /* الضغط على الصورة: يفتح المشروع الحالي بدايرة بتتوسع من مكان الضغطة */
@@ -802,19 +680,16 @@ export default function Section3() {
         };
 
         growWrap.addEventListener("mouseenter", onEnter);
-        growWrap.addEventListener("mousemove", onMove);
         growWrap.addEventListener("mouseleave", onLeave);
         growWrap.addEventListener("click", onClick);
 
         cleanupHover = () => {
-          if (raf) cancelAnimationFrame(raf);
           if (scrollRaf) cancelAnimationFrame(scrollRaf);
           clipTl?.kill();
           document.removeEventListener("mousemove", onDocMove);
           document.documentElement.removeEventListener("mouseleave", onDocLeave);
           window.removeEventListener("scroll", onScroll);
           growWrap.removeEventListener("mouseenter", onEnter);
-          growWrap.removeEventListener("mousemove", onMove);
           growWrap.removeEventListener("mouseleave", onLeave);
           growWrap.removeEventListener("click", onClick);
         };
@@ -846,6 +721,7 @@ export default function Section3() {
         }
 
         const sync = (self: ScrollTrigger) => {
+          setOverlayVisibility(self.isActive);
           const on  = self.isActive || self.progress > 0;
           const idx = Math.min(
             PROJECTS.length - 1,
@@ -889,97 +765,38 @@ export default function Section3() {
           <Image
             src={img.src}
             alt=""
-            width={600}
-            height={600}
+            width={img.id === "bt" ? 2118 : 600}
+            height={img.id === "bt" ? 742 : 600}
             quality={100}
             unoptimized={img.id === "bt"}
-            sizes={img.id === "bt" ? "9vw" : "40vw"}
-            className={styles.img}
+            sizes={img.id === "bt" ? "100vw" : "40vw"}
+            className={img.id === "bt" ? styles.containerImage : styles.img}
           />
 
           {img.id === "bt" && (
-            <>
-              <div ref={coffeeWrapRef} className={styles.coffeeOverlay}>
-                {PROJECTS.map((p, i) => (
-                  <div
-                    key={p.id}
-                    data-win={p.id}
-                    className={styles.clipWin}
-                    style={{ visibility: i === 0 ? "visible" : "hidden" }}
-                  >
-                    <div data-counter={p.id} className={styles.clipCounter}>
-                      <Image
-                        src={p.src}
-                        alt=""
-                        width={600}
-                        height={600}
-                        quality={100}
-                        unoptimized
-                        sizes="9vw"
-                        className={styles.img}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* ── محتوى الأوفرلاي: جوه الكونتينر (متمركز على مركزه) ويتقص بحدوده،
-                  وتدخل نصوصه بعد ما الكونتينر يكمل تكبيره ── */}
-              <div ref={overlayRef} className={styles.overlay} style={{ zIndex: -1 }}>
-                <div className={styles.overlayLeft}>
-                  <h3 className={styles.ovTitle}>
-                    {TITLE_LINES.map((line) => (
-                      <span key={line} className={styles.mask}>
-                        <span data-anim="title-line" className={styles.maskInner}>
-                          {line}
-                        </span>
-                      </span>
-                    ))}
-                  </h3>
-
-                  <p className={styles.ovDesc}>
-                    {DESC_LINES.map((line) => (
-                      <span key={line} className={styles.mask}>
-                        <span data-anim="desc-line" className={styles.maskInner}>
-                          {line}
-                        </span>
-                      </span>
-                    ))}
-                  </p>
-
-                  <div className={styles.ctaWrap}>
-                    {/* الـ <a> inline-block عشان البادينج بتاعه يدخل في ارتفاع الماسك (مفيش قص)،
-                        والـ padding الزيادة للماسك عشان رفعة الهفر ما تتقصش */}
-                    <span className={styles.mask} style={{ padding: "6px 0", margin: "-6px 0" }}>
-                      <span data-anim="cta" className={styles.maskInner}>
-                        <a href="#contact" className={styles.cta} style={{ display: "inline-block" }}>
-                          Start a project
-                        </a>
-                      </span>
-                    </span>
-                    <span data-anim="line" className={styles.ctaLine} />
+            <div ref={coffeeWrapRef} className={styles.coffeeOverlay}>
+              {PROJECTS.map((p, i) => (
+                <div
+                  key={p.id}
+                  data-win={p.id}
+                  className={styles.clipWin}
+                  style={{ visibility: i === 0 ? "visible" : "hidden" }}
+                >
+                  <div data-counter={p.id} className={styles.clipCounter}>
+                    <Image
+                      src={p.src}
+                      alt=""
+                      width={600}
+                      height={600}
+                      quality={100}
+                      unoptimized
+                      sizes="9vw"
+                      className={styles.img}
+                    />
                   </div>
                 </div>
-
-                <ul className={styles.stats}>
-                  {STATS.map((s) => (
-                    <li key={s.label} className={styles.stat}>
-                      <span className={styles.mask}>
-                        <span data-anim="stat-text" className={`${styles.maskInner} ${styles.statValue}`}>
-                          {s.value}
-                        </span>
-                      </span>
-                      <span className={styles.mask}>
-                        <span data-anim="stat-text" className={`${styles.maskInner} ${styles.statLabel}`}>
-                          {s.label}
-                        </span>
-                      </span>
-                      <span data-anim="stat-line" className={styles.statLine} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </>
+              ))}
+            </div>
           )}
         </div>
         );
@@ -997,6 +814,60 @@ export default function Section3() {
             >
               {item}
             </div>
+            {img.id === "bt" && (
+              <div ref={overlayRef} className={styles.overlay}>
+                  <div className={styles.overlayLeft}>
+                    <h3 className={styles.ovTitle}>
+                      {TITLE_LINES.map((line) => (
+                        <span key={line} className={styles.mask}>
+                          <span data-anim="title-line" className={styles.maskInner}>
+                            {line}
+                          </span>
+                        </span>
+                      ))}
+                    </h3>
+
+                    <p className={styles.ovDesc}>
+                      {DESC_LINES.map((line) => (
+                        <span key={line} className={styles.mask}>
+                          <span data-anim="desc-line" className={styles.maskInner}>
+                            {line}
+                          </span>
+                        </span>
+                      ))}
+                    </p>
+
+                    <div className={styles.ctaWrap}>
+                      <span className={styles.mask} style={{ padding: "6px 0", margin: "-6px 0" }}>
+                        <span data-anim="cta" className={styles.maskInner}>
+                          <a href="#contact" className={styles.cta} style={{ display: "inline-block" }}>
+                            Start a project
+                          </a>
+                        </span>
+                      </span>
+                      <span data-anim="line" className={styles.ctaLine} />
+                    </div>
+                  </div>
+
+                  <ul className={styles.stats}>
+                    {STATS.map((s) => (
+                      <li key={s.label} className={styles.stat}>
+                        <span className={styles.mask}>
+                          <span data-anim="stat-text" className={`${styles.maskInner} ${styles.statValue}`}>
+                            {s.value}
+                          </span>
+                        </span>
+                        <span className={styles.mask}>
+                          <span data-anim="stat-text" className={`${styles.maskInner} ${styles.statLabel}`}>
+                            {s.label}
+                          </span>
+                        </span>
+                        <span data-anim="stat-line" className={styles.statLine} />
+                      </li>
+                    ))}
+                  </ul>
+            </div>
+            )}
           </div>
         ) : (
           item

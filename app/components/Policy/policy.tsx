@@ -292,8 +292,14 @@ export default function PolicyPage() {
           <Image src="/tree1.webp" alt="" width={1211} height={1299} className={`${styles.tree} ${styles.tree1}`} loading="eager" />
           <Image src="/tree2.webp" alt="" width={1422} height={1106} className={`${styles.tree} ${styles.tree2}`} loading="eager" />
           <Image src="/tree3.webp" alt="" width={1319} height={1193} className={`${styles.tree} ${styles.tree3}`} loading="eager" />
-          <Image src="/rock-1.webp" alt="" width={1530} height={1028} className={styles.rockImage} loading="eager" />
-          <Image src="/rock22.webp" alt="" width={1530} height={1028} className={styles.rockImage2} />
+          <Image
+            src="/rock-with-girl.png"
+            alt=""
+            width={1821}
+            height={864}
+            className={styles.rockImage}
+            loading="eager"
+          />
         </div>
         <div className={styles.heroInner} data-hero-inner>
           <h1 className={styles.title} aria-label={TITLE.join(" ")}>

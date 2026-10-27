@@ -1,0 +1,166 @@
+.page {
+  --ink: #1f2a36;
+  --ink-soft: #55606c;
+  --mist: #c5d5df;
+  --warm: #f3ece4;
+
+  color: var(--ink);
+  background: linear-gradient(180deg, #b9ccd9 0%, var(--mist) 40%, var(--warm) 100%);
+  overflow-x: clip;
+}
+
+/* ---------- pinned scene ---------- */
+.pin {
+  position: relative;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.heading {
+  position: absolute;
+  z-index: 4;
+  left: clamp(1.5rem, 6vw, 6rem);
+  top: clamp(5.5rem, 14vh, 9rem);
+  font-family: var(--font-orbitron), sans-serif;
+  font-weight: 400;
+  font-size: clamp(2.8rem, 6.5vw, 6rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.heading span { display: block; overflow: hidden; padding-bottom: 0.05em; }
+
+.copy {
+  position: absolute;
+  z-index: 4;
+  left: clamp(1.5rem, 6vw, 6rem);
+  top: 52%;
+  width: min(26rem, 38vw);
+  display: grid;
+}
+.block { grid-area: 1 / 1; }
+.blockTitle { font-family: var(--font-orbitron), sans-serif; font-weight: 500; font-size: clamp(1.4rem, 2vw, 1.9rem); line-height: 1.15; margin-bottom: 0.8rem; }
+.block p { font-size: clamp(1.05rem, 1.35vw, 1.25rem); line-height: 1.65; color: var(--ink-soft); }
+
+.story {
+  grid-area: 2 / 1;
+  justify-self: start;
+  margin-top: 2rem;
+  font-size: 1.7rem;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 2px solid var(--ink);
+  transition: letter-spacing 0.25s ease;
+}
+.story:hover { letter-spacing: 0.04em; }
+.story:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+
+/* ---------- island ---------- */
+.island {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 14%;
+  width: min(52vw, 640px);
+  translate: -50% 0;
+  filter: drop-shadow(0 50px 50px rgba(40, 60, 80, 0.25));
+}
+.island svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+/* ---------- clouds ---------- */
+.cloudSide, .cloudFront {
+  position: absolute;
+  pointer-events: none;
+  filter: blur(16px);
+}
+.cloudSide {
+  z-index: 2;
+  bottom: 6%;
+  width: 55%;
+  height: 40%;
+  background:
+    radial-gradient(ellipse 40% 60% at 30% 70%, #fff 0, transparent 70%),
+    radial-gradient(ellipse 45% 70% at 70% 60%, #fff 0, transparent 70%);
+  opacity: 0.9;
+}
+.cloudFront {
+  z-index: 5;
+  left: -10%;
+  bottom: -10%;
+  width: 120%;
+  height: 34%;
+  background:
+    radial-gradient(ellipse 22% 60% at 10% 70%, #fff 0, transparent 70%),
+    radial-gradient(ellipse 26% 70% at 36% 80%, #fff 0, transparent 70%),
+    radial-gradient(ellipse 24% 60% at 64% 72%, #fff 0, transparent 70%),
+    radial-gradient(ellipse 22% 65% at 92% 78%, #fff 0, transparent 70%);
+  opacity: 0.95;
+}
+
+/* ---------- index ---------- */
+.index {
+  position: absolute;
+  z-index: 4;
+  right: clamp(1.5rem, 6vw, 6rem);
+  top: 38%;
+  list-style: none;
+  display: grid;
+  gap: 1.5rem;
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  letter-spacing: 0.04em;
+}
+.index li { display: flex; gap: 1.2rem; }
+.index li span { color: var(--ink-soft); }
+
+.line {
+  position: absolute;
+  z-index: 4;
+  right: calc(clamp(1.5rem, 6vw, 6rem) - 1.2rem);
+  top: 38%;
+  width: 2px;
+  height: 13rem;
+  background: var(--ink);
+  transform: scaleY(0);
+  transform-origin: top;
+}
+
+/* ---------- closing statement ---------- */
+.statement {
+  min-height: 100svh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 3rem;
+  padding: 8rem clamp(1.5rem, 8vw, 10rem);
+  text-align: center;
+}
+.statement p {
+  max-width: 24ch;
+  font-family: var(--font-orbitron), sans-serif;
+  font-size: clamp(2rem, 5vw, 4.4rem);
+  line-height: 1.12;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.95rem 1.6rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.pill:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -10px rgba(20, 40, 70, 0.5); }
+.pill:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 820px) {
+  .island { width: 86vw; top: 20%; }
+  .copy { width: calc(100% - 3rem); top: 66%; }
+  .index { top: auto; bottom: 1.5rem; right: auto; left: 1.5rem; grid-auto-flow: column; gap: 1rem; font-size: 0.6rem; }
+  .index li span { display: none; }
+  .line { display: none; }
+  .heading { top: 5.5rem; }
+}
